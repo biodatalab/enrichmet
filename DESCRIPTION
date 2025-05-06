@@ -1,0 +1,32 @@
+Package: enrichmet
+Type: Package
+Title: ENRICHMET: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
+Version: 0.1.0
+Author: Yonatan Ayalew Mekonnen
+Maintainer: Yonatan <yonatanayalew.mekonnen@moffitt.org>
+Description: Provides functions to perform metabolite-based pathway enrichment 
+    analysis using Fisher’s exact test and MetSEA. Computes relative betweenness 
+    centrality (RBC) of input metabolites in a pathway-metabolite interaction network. 
+    The package generates visualizations including pathway dot plots, MetSEA plots, 
+    and metabolite centrality plots. It supports KEGG-based pathway inputs and 
+    generates exportable results.
+License: AGPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Imports:
+    dplyr,
+    tidyr,
+    igraph,
+    ggplot2,
+    fgsea,
+    openxlsx,
+    readxl,
+    stringr,
+    ggraph,
+    purrr,
+    ggrepel,
+    pheatmap,
+    ComplexHeatmap,
+    ComplexHeatmap,
+    ggplotify
