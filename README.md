@@ -17,10 +17,10 @@ You can install enrichmet as:
 
 ``` r
 install.packages("remotes")
-remotes::install_git("https://github.com/biodatalab/enrichmet_R_package.git")
+remotes::install_git("https://github.com/biodatalab/enrichmet.git")
 or 
 install.packages("devtools")
-devtools::install_git("https://github.com/biodatalab/enrichmet_R_package.git")
+devtools::install_git("https://github.com/biodatalab/enrichmet.git")
 or
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
