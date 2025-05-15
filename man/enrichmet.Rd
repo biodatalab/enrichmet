@@ -26,9 +26,11 @@ enrichmet(
 
 \item{p_value_cutoff}{A numeric value for adjusting the p-value threshold for filtering significant pathways (default is 1).}
 
-\item{mapping_df}{A data frame containing the mapping of metabolite IDs (KEGG_ID) to their corresponding STITCH IDs.}
+\item{kegg_lookup}{Optional KEGG ID-to-name lookup table (data.frame with `kegg_id` and `name` columns).}
 
-\item{stitch_df}{A data frame containing STITCH interaction data, including STITCH IDs and chemical–chemical interaction information downloaded from the STITCH database.}
+\item{mapping_df}{Optional data frame containing the mapping of metabolite IDs (KEGG_ID) to their corresponding STITCH IDs.}
+
+\item{stitch_df}{Optional data frame containing STITCH interaction data, including STITCH IDs and chemical–chemical interaction information downloaded from the STITCH database.}
 }
 \value{
 A list containing three ggplot objects: pathway enrichment plot, GSEA plot, and RBC plot.
@@ -42,19 +44,16 @@ It also generates plots for pathway enrichment, MetSEA,relative betweenness cent
 ## ** Examples
 library(igraph)
 library(ggraph)
-library(tidygraph)
 library(ggplot2)
 library(openxlsx)
 library(dplyr)
 library(tidyr)
 library(fgsea)
-library(purrr)
 library(ggrepel)
 library(stringr)
-library(pheatmap)
 library(ComplexHeatmap)
-library(ggplotify)
 library(enrichmet)
+
 # Generate example data with at least n=50 metabolites
 set.seed(1234)
 
@@ -102,12 +101,12 @@ STITCH_ID = paste0("CIDs", str_pad(sample(1000:9999, length(inputMetabolites)), 
 stitch_ids <- mapping_df$STITCH_ID
 
 stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) \%>\%
- filter(chemical1 != chemical2)
+ dplyr::filter(chemical1 != chemical2)
 
 set.seed(123)
 stitch_df <- stitch_pairs \%>\%
 slice_sample(n = 200) \%>\%
-mutate(
+dplyr::mutate(
   similarity = runif(n(), 0, 1),
   experimental = sample(0:500, n(), replace = TRUE),
   database = sample(c(0, 300, 600, 900), n(), replace = TRUE),

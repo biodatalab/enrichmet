@@ -1,0 +1,148 @@
+---
+title: "EnrichMet Tutorial"
+author: "Yonatan Ayalew Mekonnen"
+date: "`r Sys.Date()`"
+package: "`r packageVersion('enrichmet')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    theme: united
+    highlight: tango
+vignette: >
+  %\VignetteIndexEntry{Quick and Easy Pathway and Network Analysis in Metabolomics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# EnrichMet
+
+**EnrichMet** is a comprehensive tool for metabolomics pathway analysis. It performs pathway enrichment using Fisher’s exact test, computes betweenness centrality and relative betweenness centrality (RBC) for metabolites, and conducts Metabolite Set Enrichment Analysis (MetSEA). With a single function call (`enrichmet()`), the package generates a rich set of visualizations, including:
+
+- **Pathway enrichment plot**
+- **Pathway impact plot**
+- **MetSEA plot**
+- **RBC plot**
+- **Network graph**
+- **Pathway heatmap**
+- **Pathway membership plot**
+- **Interaction network plot**
+
+Additionally, EnrichMet exports both the **MetSEA** and **pathway enrichment** results as `.xlsx` tables, streamlining both analysis and reporting.
+
+
+## Installation
+
+You can install EnrichMet as:
+
+```r
+install.packages("remotes")
+remotes::install_git("https://github.com/biodatalab/enrichmet.git")
+# or 
+install.packages("devtools")
+devtools::install_git("https://github.com/biodatalab/enrichmet.git")
+# or
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("enrichmet")
+
+```
+
+### Dependancies
+
+```{r, Case study of KrasG12D mutation}
+library(igraph)
+library(ggraph)
+library(ggplot2)
+library(openxlsx)
+library(dplyr)
+library(tidyr)
+library(fgsea)
+library(ggrepel)
+library(stringr)
+library(ComplexHeatmap)
+library(readr)
+library(magrittr)
+library(circlize)
+library(scales)
+library(tibble)
+library(knitr)
+```
+
+
+**To run the EnrichMet package, at least three input files are required:**  
+*PathwayVsMetabolites*, *InputMetabolites*, *SummaryStatistics*
+
+**Optional:**  
+*KEGGLookup*, *mapping_df*, *STITCHInteractions*
+
+## Case study of KrasG12D mutation
+
+We used summary statistics of the differential analysis derived from metabolomic measurements of KrasG12D mutation and KrasG12D mutation with TAp73 deletion. We selected the top 50 metabolites to apply Fisher’s Exact Test for pathway enrichment analysis. The summary statistics from the differential analysis were used for MetSEA analysis.
+
+We used summary statistics from differential analyses based on metabolomic measurements comparing KrasG12D mutations with and without TAp73 deletion. The top 50 metabolites, ranked by significance, were selected for pathway enrichment analysis using Fisher’s Exact Test. These summary statistics were also utilized for MetSEA analysis.
+
+```{r}
+# InputMetabolites: A vector or list containing the metabolites of interest.
+inputMetabolites <- c(
+  "C02721", "C03736", "C03139", "C00074", "C02862", "C00092", "C00275",
+  "C00386", "C10172", "C00361", "C00242", "C19806", "C16358", "C16357",
+  "C16353", "C02140", "C05488", "C01181", "C03017", "C02632", "C00246",
+  "C00079", "C08317", "C00588", "C16527", "C00065", "C00249", "C00836",
+  "C02990", "C03690", "C04025", "C06424", "C00123", "C00606", "C03067",
+  "C00539", "C00633", "C00519", "C00366", "C00148", "C00219", "C08261",
+  "C00385", "C06429", "C05637", "C00295", "C06428", "C16513", "C01909",
+  "C03299", "C01530", "C01571", "C08278", "C00599", "C15587", "C00144",
+  "C03739"
+)
+# PathwayVsMetabolites: A file mapping pathways to their corresponding metabolites.
+PathwayVsMetabolites=read.csv("~/Downloads/Human-PathwaysVsMetabolites.csv")
+str(PathwayVsMetabolites)
+# SummaryStatistics: A file containing differential analysis results or other relevant statistical outputs.
+example_data=read.xlsx("~/Downloads/example_data.xlsx")
+head(example_data)
+# KEGGLookup: A file or function output that annotates KEGG compound IDs with their corresponding metabolite names.
+kegg_lookup=read.xlsx("~/Downloads/kegg_lookup.xlsx")
+head(kegg_lookup)
+# Mapping_df: A data frame that maps metabolites to their corresponding STITCH IDs.
+mapping_df = read.xlsx("~/Downloads/mapping_df.xlsx")
+head(mapping_df)
+#STITCHInteractions: A file obtained from the STITCH database containing chemical–chemical interaction information.
+stitch_df =readr::read_tsv("~/Downloads/chemical_chemical.tsv")
+head(stitch_df)
+
+# ----- Run enrichment analysis ----
+#loading the package
+library(enrichmet)
+results <-enrichmet(
+  inputMetabolites = inputMetabolites,
+  PathwayVsMetabolites = PathwayVsMetabolites,example_data, kegg_lookup,
+  top_n = 100,p_value_cutoff = 1,
+  mapping_df = mapping_df,
+  stitch_df = stitch_df
+)
+
+```
+
+## Display Plots
+
+```{r display-plots, results='asis', fig.align='center', fig.width=12, fig.height=8}
+print(results$pathway_plot)
+```
+The plot shows the enriched pathways with thier corresponding -log pvalue. We used the metabolites lists as an input to
+print(results$impact_plot)
+print(results$MetSEA_plot)
+print(results$rbc_plot)
+print(results$network_plot)
+print(results$heatmap_plot)
+cat('<div style="overflow-x: auto; width: 100%;">')
+ComplexHeatmap::draw(results$membership_plot)
+cat('</div>')
+print(results$interaction_plot)
+```
+
+```{r session-info, echo=FALSE}
+sessionInfo()
+```
+

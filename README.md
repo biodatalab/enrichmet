@@ -1,15 +1,15 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# enrichmet
+# EnrichMet
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-enrichmet performs pathway enrichment analysis using Fisher’s exact
+EnrichMet performs pathway enrichment analysis using Fisher’s exact
 test, computes betweenness centrality for metabolites, and performs
 Metabolite Set Enrichment Analysis (MetSEA). It also generates plots for
-pathway enrichment, MetSEA, and relative betweenness centrality (RBC).
+pathway enrichment, MetSEA, relative betweenness centrality (RBC), and  and interaction plot.
 
 ## Installation
 
