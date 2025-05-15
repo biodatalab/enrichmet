@@ -391,7 +391,7 @@ enrichmet <- function(inputMetabolites,
     maxSize = 500,
     nproc = 1
   )
-  MSEAres$input_count <- vapply(MSEAres$leadingEdge, length)
+  MSEAres$input_count <- vapply(MSEAres$leadingEdge, length, integer(1))
 
   # Sort the GSEA results by p-value (ascending order)
   MSEAres <- MSEAres %>%
