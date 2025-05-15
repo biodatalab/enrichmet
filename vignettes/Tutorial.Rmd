@@ -112,7 +112,7 @@ head(mapping_df)
 stitch_df =readr::read_tsv("~/Downloads/chemical_chemical.tsv")
 head(stitch_df)
 
-# ----- Run enrichment analysis ----
+#  Run enrichment analysis 
 #loading the package
 library(enrichmet)
 results <-enrichmet(
