@@ -1,0 +1,48 @@
+Package: enrichmet
+Type: Package
+Title: ENRICHMET: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
+Version: 0.99.0
+Authors@R: 
+    c(
+        person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
+        person("Paula", "Stewart", email = "paulastewart@gmail.com", role = "ctb"),
+        person(given="H. Lee Moffitt Cancer Center & Research Institute",
+        role = "fnd",
+        comment = "Grant number: P01CA250984")
+    )
+Description: Provides functions to perform metabolite-based pathway enrichment 
+    analysis using Fisher’s exact test and MetSEA. Computes relative betweenness 
+    centrality (RBC) of input metabolites in a pathway-metabolite interaction network. 
+    The package generates visualizations including pathway dot plots, MetSEA plots, 
+    metabolite centrality plots, and network plots. It supports KEGG-based pathway inputs and 
+    generates exportable results.
+License: AGPL-3 + file LICENSE
+Encoding: UTF-8
+LazyData: false
+RoxygenNote: 7.3.2
+URL: https://github.com/biodatalab/enrichmet/issues
+BugReports: https://github.com/biodatalab/enrichmet
+Imports:
+    dplyr,
+    tidyr,
+    igraph,
+    ggplot2,
+    fgsea,
+    openxlsx,
+    stringr,
+    ggraph,
+    ggrepel,
+    ComplexHeatmap,
+    magrittr,
+    circlize,
+    scales,
+    tibble,
+    readr
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
+
