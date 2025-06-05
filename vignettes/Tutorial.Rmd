@@ -70,13 +70,44 @@ library(tibble)
 library(knitr)
 library(httr)
 ```
+## Required Input Files
 
+To run the **EnrichMet** package, you need to provide at least the following three files:
 
-**To run the EnrichMet package, at least three input files are required:**  
-*PathwayVsMetabolites*, *InputMetabolites*, *SummaryStatistics*
+- **`PathwayVsMetabolites`**  
+  This file contains a table mapping metabolic pathways to their associated metabolites, defining which metabolites belong to each pathway for enrichment analysis.  
+  We provide a human-specific `PathwayVsMetabolites` file available here:  
+  [Human-PathwaysVsMetabolites.csv](https://zenodo.org/api/records/15498097/files/Human-PathwaysVsMetabolites.csv)  
+  However, users can supply a file tailored to their species of interest.
 
-**Optional:**  
-*KEGGLookup*, *mapping_df*, *STITCHInteractions*
+- **`InputMetabolites`**  
+  A list of metabolites from your experimental data to analyze, typically consisting of metabolite identifiers detected or quantified in your study. This input file should be prepared and provided by the user.
+
+- **`SummaryStatistics`**  
+  Statistical results corresponding to the input metabolites, such as fold changes, p-values, or other relevant metrics. These statistics guide the enrichment analysis by reflecting the significance or effect size of each metabolite. This file is also user-provided.
+
+## Optional Input Files
+
+Including these optional files can enhance the analysis and its biological interpretation:
+
+- **`KEGGLookup`**  
+  A reference file linking KEGG compound IDs to metabolite names or other annotations, which helps standardize identifiers and improve pathway mapping.  
+  We provide a KEGGLookup file here:  
+  [kegg_lookup.xlsx](https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx)  
+  Users may also provide a lookup file specific to their species.
+
+- **`STITCHInteractions`**  
+  A dataset of known or predicted interactions between metabolites or proteins, useful for constructing interaction networks to support pathway analysis.  
+  We supply an example file here:  
+  [chemical_chemical.tsv](https://zenodo.org/api/records/15498097/files/chemical_chemical.tsv)  
+  Users may provide their own interaction data appropriate for their species.
+
+- **`mapping_df`**  
+  A mapping data frame that links STITCH identifiers with metabolite names, facilitating integration between datasets.  
+  The provided example file is available here:  
+  [mapping_df.xlsx](https://zenodo.org/api/records/15498097/files/mapping_df.xlsx)  
+  Users can substitute this with a mapping file relevant to their species of interest.
+
 
 ## Case study of KrasG12D mutation
 
