@@ -466,14 +466,14 @@ enrichmet <- function(inputMetabolites,
 
   g_all <- igraph::graph_from_data_frame(edge_list_all, directed = FALSE)
   bet_all <- igraph::betweenness(g_all, directed = FALSE, normalized = TRUE)
-  bet_df <- tibble(name = names(bet_all), centrality = as.numeric(bet_all))
+  bet_df <- tibble(name = names(bet_all), Centrality = as.numeric(bet_all))
 
   edges <- df %>% dplyr::select(Pathway, Metabolite)
   g <- igraph::graph_from_data_frame(edges, directed = FALSE)
 
   igraph::V(g)$type <- ifelse(igraph::V(g)$name %in% df$Pathway, "Pathway", "Metabolite")
-  igraph::V(g)$centrality <- NA
-  igraph::V(g)$centrality[igraph::V(g)$type == "Metabolite"] <- bet_df$centrality[match(igraph::V(g)$name[igraph::V(g)$type == "Metabolite"], bet_df$name)]
+  igraph::V(g)$Centrality <- NA
+  igraph::V(g)$Centrality[igraph::V(g)$type == "Metabolite"] <- bet_df$Centrality[match(igraph::V(g)$name[igraph::V(g)$type == "Metabolite"], bet_df$name)]
   igraph::V(g)$group <- ifelse(igraph::V(g)$type == "Pathway",
                                igraph::V(g)$name,
                                df$Pathway[match(igraph::V(g)$name, df$Metabolite)])
@@ -486,7 +486,7 @@ enrichmet <- function(inputMetabolites,
 
   network_layout <- ggraph(g, layout = "fr") +
     ggraph::geom_edge_link(aes(edge_alpha = 0.5), show.legend = FALSE) +
-    ggraph::geom_node_point(aes(color = centrality, size = centrality)) +
+    ggraph::geom_node_point(aes(color = Centrality, size = Centrality)) +
     ggraph::geom_node_text(aes(label = name), repel = TRUE, size = 3) +
     ggplot2::scale_color_gradient(low = "blue", high = "red") +
     ggplot2::scale_size_continuous(range = c(3, 8)) +
