@@ -18,7 +18,12 @@ vignette: >
 
 # EnrichMet
 
-**EnrichMet** is a comprehensive tool for metabolomics pathway analysis. It performs pathway enrichment using Fisher’s exact test, computes betweenness centrality and relative betweenness centrality (RBC) for metabolites, and conducts Metabolite Set Enrichment Analysis (MetSEA). With a single function call (`enrichmet()`), the package generates a rich set of visualizations, including:
+## Introduction
+
+Advances in metabolomics have enhanced our understanding of cellular processes by enabling the detection of hundreds of metabolites in a single experiment, offering insights into complex metabolic networks. Pathway Enrichment Analysis (PEA) is key to linking these metabolites to biological pathways, but existing tools often require multiple steps, lack robust visualization, depend on web-based interfaces, or rely on difficult to install R packages—hindering reproducibility and efficiency. To address these challenges, we present EnrichMet, an R package for streamlined, reproducible pathway enrichment, metabolite set enrichment analysis (MetSEA), and network analysis. EnrichMet integrates fgsea for fast MetSEA, igraph for topology-based metrics, and curated KEGG data for enrichment using Fisher’s Exact Test—all accessible via a single function call. Through a case study on experimental metabolomics data, we show that EnrichMet outperforms existing tools in accuracy, speed, and usability. Its flexible framework also supports diverse data types and applications beyond KEGG, empowering researchers to extract deeper biological insights with minimal effort.
+
+
+**EnrichMet** generates a rich set of visualizations, including:
 
 - **Pathway enrichment plot**
 - **Pathway impact plot**

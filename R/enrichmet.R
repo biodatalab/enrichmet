@@ -424,9 +424,15 @@ enrichmet <- function(inputMetabolites,
     ) +
     ggplot2::theme_minimal()
 
-  openxlsx::write.xlsx(significant_results_df, "pathway_enrichment_results.xlsx")
-  openxlsx::write.xlsx(MSEAres, "gsea_results.xlsx")
-
+  # For significant_results_df
+  output_file1 <- tempfile(pattern = "pathway_enrichment_", fileext = ".xlsx")
+  openxlsx::write.xlsx(significant_results_df, output_file1)
+  message("Pathway enrichment results saved to: ", output_file1)
+  
+  # For MSEAres
+  output_file2 <- tempfile(pattern = "gsea_", fileext = ".xlsx")
+  openxlsx::write.xlsx(MSEAres, output_file2)
+  message("GSEA results saved to: ", output_file2)
   # Centrality Plot (RBC Plot)
   if (!is.null(kegg_lookup)) {
     input_metabolite_centrality <- input_metabolite_centrality %>%
