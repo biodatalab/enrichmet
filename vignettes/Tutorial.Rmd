@@ -80,7 +80,8 @@ library(httr)
 To run the **EnrichMet** package, you need to provide at least the following three files:
 
 - **`PathwayVsMetabolites`**  
-  This file contains a table mapping metabolic pathways to their associated metabolites, defining which metabolites belong to each pathway for enrichment analysis.  
+This file defines the mapping between metabolic pathways and their associated metabolites, serving as the background reference for Fisher’s exact test–based enrichment analysis.
+EnrichMet uses curated human-specific pathway-metabolite mappings, which are periodically updated using KEGGREST and archived on Zenodo to ensure reproducibility and minimize run-time delays. 
   We provide a human-specific `PathwayVsMetabolites` file available here:  
   [Human-PathwaysVsMetabolites.csv](https://zenodo.org/api/records/15498097/files/Human-PathwaysVsMetabolites.csv)  
   However, users can supply a file tailored to their species of interest.
