@@ -2,3 +2,7 @@
 ^\.Rproj\.user$
 ^doc$
 ^Meta$
+^.*\.xlsx$
+^~\$.*\.xlsx$
+^.*\.tar\.gz$
+^output\.gmt$

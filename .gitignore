@@ -4,3 +4,10 @@
 .Ruserdata
 /doc/
 /Meta/
+*.Rproj
+*.xlsx
+~$*.xlsx
+*.tar.gz
+doc/
+output.gmt
+
