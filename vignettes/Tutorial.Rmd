@@ -90,7 +90,7 @@ EnrichMet uses curated human-specific pathway-metabolite mappings, which are per
   A list of metabolites from your experimental data to analyze, typically consisting of metabolite identifiers detected or quantified in your study. This input file should be prepared and provided by the user.
 
 - **`SummaryStatistics`**  
-  Statistical results corresponding to the input metabolites, such as fold changes, p-values, or other relevant metrics. These statistics guide the enrichment analysis by reflecting the significance or effect size of each metabolite. This file is also user-provided.
+  Statistical results corresponding to the input metabolites, such as fold changes, p-values, or other relevant metrics. These statistics guide the enrichment analysis by reflecting the significance or effect size of each metabolite. This file is also user-provided.This information can be supplied as a separate data frame or retrieved directly from rowData() in a SummarizedExperiment object, assuming it contains columns for metabolite identifiers, p-values, and fold changes.
 
 ## Optional Input Files
 
