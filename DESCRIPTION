@@ -16,7 +16,7 @@ Description: Provides functions to perform metabolite-based pathway enrichment
     The package generates visualizations including pathway dot plots, MetSEA plots, 
     metabolite centrality plots, and network plots. It supports KEGG-based pathway inputs and 
     generates exportable results.
-License: AGPL-3
+License: AGPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.2
@@ -40,6 +40,7 @@ Imports:
     readr
 Suggests: 
     knitr,
+    httr,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
