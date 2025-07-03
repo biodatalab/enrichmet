@@ -1,11 +1,10 @@
 Package: enrichmet
 Type: Package
 Title: ENRICHMET: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.1
+Version: 0.99.2
 Authors@R: 
     c(
         person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
-        person("Paula", "Stewart", email = "paulastewart@gmail.com", role = "ctb"),
         person(given="H. Lee Moffitt Cancer Center & Research Institute",
         role = "fnd",
         comment = "Grant number: P01CA250984")
