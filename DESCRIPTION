@@ -1,7 +1,7 @@
 Package: enrichmet
 Type: Package
-Title: ENRICHMET: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.3
+Title: enrichmet: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
+Version: 0.99.4
 Authors@R: 
     c(
         person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
@@ -27,6 +27,7 @@ Imports:
     igraph,
     ggplot2,
     fgsea,
+    readxl,
     openxlsx,
     stringr,
     ggraph,
@@ -36,7 +37,8 @@ Imports:
     circlize,
     scales,
     tibble,
-    readr
+    readr,
+    BiocFileCache
 Suggests: 
     knitr,
     httr,

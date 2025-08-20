@@ -1,7 +1,7 @@
 library(readr)
-library(openxlsx)
+library(readxl)
 library(httr)
-
+library(BiocFileCache)
 
 # InputMetabolites: A vector or list containing the metabolites of interest.
 inputMetabolites <- c(
@@ -19,19 +19,30 @@ inputMetabolites <- c(
 PathwayVsMetabolites=read.csv("https://zenodo.org/api/records/15498097/files/Human-PathwaysVsMetabolites.csv/content")
 str(PathwayVsMetabolites)
 # SummaryStatistics: A file containing differential analysis results or other relevant statistical outputs.
-example_data=read.xlsx("https://zenodo.org/api/records/15498097/files/example_data.xlsx/content")
+example_data=read_excel("https://zenodo.org/api/records/15498097/files/example_data.xlsx/content")
 head(example_data)
 # KEGGLookup: A file containing annotated KEGG compound IDs with their corresponding metabolite names.
-kegg_lookup=read.xlsx("https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx/content")
+kegg_lookup=read_excel("https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx/content")
 head(kegg_lookup)
 # Mapping_df: A data frame that maps metabolites to their corresponding STITCH IDs.
-mapping_df = read.xlsx("https://zenodo.org/api/records/15498097/files/mapping_df.xlsx/content")
+mapping_df = read_excel("https://zenodo.org/api/records/15498097/files/mapping_df.xlsx/content")
 head(mapping_df)
 #STITCHInteractions: A file obtained from the STITCH database containing chemical–chemical interaction information.
-options(timeout = 600)  
-url <- "https://zenodo.org/api/records/15498097/files/chemical_chemical.tsv/content"
-response <- GET(url, config = config(ssl_verifypeer = FALSE))
-stitch_df <- read_tsv(content(response, "raw"))
+# Use a standard cache location (BiocFileCache will create it if missing)
+cache_dir <- tools::R_user_dir("enrichmet", "cache")  
+
+# Initialize BiocFileCache without prompting
+bfc <- BiocFileCache(cache_dir, ask = FALSE)
+
+# Zenodo-hosted STITCH interactions file
+url <- "https://zenodo.org/records/15498097/files/chemical_chemical.tsv"
+
+# Retrieve or download + cache the file
+path <- bfcrpath(bfc, url)
+
+# Read the file
+stitch_df <- read_tsv(path)
+
 head(stitch_df)
 
 
