@@ -31,7 +31,6 @@ Advances in metabolomics have enhanced our understanding of cellular processes b
 
 Additionally, enrichmet exports both the **MetSEA** and **pathway enrichment** results as `.xlsx` tables, streamlining both analysis and reporting.
 
-
 # Installation
 
 You can install enrichmet as:
