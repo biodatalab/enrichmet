@@ -206,7 +206,7 @@ The plot presents the pathway impact analysis, combining enrichment significance
 ```{r display-plots3, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$MetSEA_plot)
 ```
-The plot displays the Metabolite Set Enrichment Analysis (MetSEA) results, highlighting significantly enriched metabolite sets
+The plot displays the Metabolite Set Enrichment Analysis (MetSEA) results, highlighting significantly enriched metabolite sets.
 
 ```{r display-plots4, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$rbc_plot)
