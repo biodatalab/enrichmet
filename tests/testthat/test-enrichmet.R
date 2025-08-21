@@ -15,36 +15,48 @@ inputMetabolites <- c(
     "C03299", "C01530", "C01571", "C08278", "C00599", "C15587", "C00144",
     "C03739"
 )
-# PathwayVsMetabolites: A file mapping pathways to their corresponding metabolites.
-PathwayVsMetabolites=read.csv("https://zenodo.org/api/records/15498097/files/Human-PathwaysVsMetabolites.csv/content")
-str(PathwayVsMetabolites)
-# SummaryStatistics: A file containing differential analysis results or other relevant statistical outputs.
-example_data=read_excel("https://zenodo.org/api/records/15498097/files/example_data.xlsx/content")
-head(example_data)
-# KEGGLookup: A file containing annotated KEGG compound IDs with their corresponding metabolite names.
-kegg_lookup=read_excel("https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx/content")
-head(kegg_lookup)
-# Mapping_df: A data frame that maps metabolites to their corresponding STITCH IDs.
-mapping_df = read_excel("https://zenodo.org/api/records/15498097/files/mapping_df.xlsx/content")
-head(mapping_df)
-#STITCHInteractions: A file obtained from the STITCH database containing chemical–chemical interaction information.
-# Use a standard cache location (BiocFileCache will create it if missing)
-cache_dir <- tools::R_user_dir("enrichmet", "cache")  
-
-# Initialize BiocFileCache without prompting
+# Standard cache location
+cache_dir <- tools::R_user_dir("enrichmet", "cache")
 bfc <- BiocFileCache(cache_dir, ask = FALSE)
 
-# Zenodo-hosted STITCH interactions file
-url <- "https://zenodo.org/records/15498097/files/chemical_chemical.tsv"
+# Helper function to download & cache any file from Zenodo
+get_cached_file <- function(url) {
+    bfcrpath(bfc, url)
+}
 
-# Retrieve or download + cache the file
-path <- bfcrpath(bfc, url)
+# -------------------------
+# Load files with caching
+# -------------------------
 
-# Read the file
-stitch_df <- read_tsv(path)
+# PathwayVsMetabolites
+pathway_url <- "https://zenodo.org/api/records/15498097/files/Human-PathwaysVsMetabolites.csv/content"
+pathway_path <- get_cached_file(pathway_url)
+PathwayVsMetabolites <- read.csv(pathway_path)
+str(PathwayVsMetabolites)
 
+# SummaryStatistics
+example_url <- "https://zenodo.org/api/records/15498097/files/example_data.xlsx/content"
+example_path <- get_cached_file(example_url)
+example_data <- read_excel(example_path)
+head(example_data)
+
+# KEGGLookup
+kegg_url <- "https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx/content"
+kegg_path <- get_cached_file(kegg_url)
+kegg_lookup <- read_excel(kegg_path)
+head(kegg_lookup)
+
+# Mapping_df
+mapping_url <- "https://zenodo.org/api/records/15498097/files/mapping_df.xlsx/content"
+mapping_path <- get_cached_file(mapping_url)
+mapping_df <- read_excel(mapping_path)
+head(mapping_df)
+
+# STITCHInteractions
+stitch_url <- "https://zenodo.org/records/15498097/files/chemical_chemical.tsv"
+stitch_path <- get_cached_file(stitch_url)
+stitch_df <- read_tsv(stitch_path)
 head(stitch_df)
-
 
 test_that("enrichmet returns expected output format", {
   result <- enrichmet(inputMetabolites, PathwayVsMetabolites=PathwayVsMetabolites, example_data, top_n = 100, p_value_cutoff = 1, kegg_lookup = kegg_lookup, mapping_df = mapping_df, stitch_df = stitch_df)
