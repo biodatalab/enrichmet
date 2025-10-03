@@ -18,7 +18,7 @@ Description: Provides functions to perform metabolite-based pathway enrichment
 License: AGPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: https://github.com/biodatalab/enrichmet/issues
 BugReports: https://github.com/biodatalab/enrichmet
 Imports:
@@ -27,8 +27,6 @@ Imports:
     igraph,
     ggplot2,
     fgsea,
-    readxl,
-    openxlsx,
     stringr,
     ggraph,
     ggrepel,
@@ -38,13 +36,13 @@ Imports:
     scales,
     tibble,
     readr,
-    BiocFileCache
 Suggests: 
     knitr,
+    readxl,
+    BiocFileCache,
     httr,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
-

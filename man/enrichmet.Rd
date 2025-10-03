@@ -2,74 +2,109 @@
 % Please edit documentation in R/enrichmet.R
 \name{enrichmet}
 \alias{enrichmet}
-\title{ENRICHMET: R package for Quick and Easy Pathway Analysis in Metabolomics}
+\title{ENRICHMET: Comprehensive Pathway Analysis for Metabolomics Data}
 \usage{
 enrichmet(
   inputMetabolites,
   PathwayVsMetabolites,
-  example_data,
+  example_data = NULL,
   top_n = 100,
   p_value_cutoff = 1,
   kegg_lookup = NULL,
   mapping_df = NULL,
-  stitch_df = NULL
+  stitch_df = NULL,
+  output_dir = NULL,
+  save_excel = FALSE,
+  analysis_type = c("enrichment", "gsea", "centrality", "network", "heatmap",
+    "membership", "interaction"),
+  run_plots = TRUE
 )
 }
 \arguments{
-\item{inputMetabolites}{A vector of metabolites for which pathway enrichment and centrality analysis are to be performed.}
+\item{inputMetabolites}{A character vector of metabolite IDs (KEGG IDs recommended) 
+for which pathway enrichment and centrality analysis are to be performed.}
 
-\item{PathwayVsMetabolites}{A data frame containing pathways and their associated metabolites.}
+\item{PathwayVsMetabolites}{A data frame containing pathways and their associated 
+metabolites. Must include columns 'Pathway' and 'Metabolites'.}
 
-\item{example_data}{A data frame containing example data for GSEA. This should include columns such as "met_id", "pval", and "log2fc".}
+\item{example_data}{A data frame containing metabolite-level data for GSEA analysis. 
+Should include columns "met_id", "pval", and "log2fc". Required for GSEA analysis.}
 
-\item{top_n}{An integer specifying the number of top pathways to include in the pathway enrichment results (default is 100).}
+\item{top_n}{An integer specifying the number of top pathways to include in the 
+pathway enrichment results (default is 100). Use NULL to return all pathways.}
 
-\item{p_value_cutoff}{A numeric value for adjusting the p-value threshold for filtering significant pathways (default is 1).}
+\item{p_value_cutoff}{A numeric value for adjusting the p-value threshold for 
+filtering significant pathways (default is 1, no filtering).}
 
-\item{kegg_lookup}{Optional KEGG ID-to-name lookup table (data.frame with `kegg_id` and `name` columns).}
+\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping. Should contain
+columns 'kegg_id' and 'name'.}
 
-\item{mapping_df}{Optional data frame containing the mapping of metabolite IDs (KEGG_ID) to their corresponding STITCH IDs.}
+\item{mapping_df}{Optional data frame containing the mapping of metabolite IDs 
+(KEGG_ID) to their corresponding STITCH IDs and PubChem CIDs.}
 
-\item{stitch_df}{Optional data frame containing STITCH interaction data, including STITCH IDs and chemical–chemical interaction information downloaded from the STITCH database.}
+\item{stitch_df}{Optional data frame containing STITCH interaction data, including 
+STITCH IDs and chemical-chemical interaction information downloaded from 
+the STITCH database.}
+
+\item{output_dir}{Optional directory path for saving output files. If NULL (default),
+no files are written.}
+
+\item{save_excel}{Logical indicating whether to save results as Excel files 
+(default = FALSE).}
+
+\item{analysis_type}{Character vector specifying which analyses to run. Options include:
+"enrichment" (pathway enrichment), "gsea" (metabolite set enrichment), 
+"centrality" (network centrality), "network" (pathway-metabolite network),
+"interaction" (chemical interaction network), "heatmap" (enrichment heatmap),
+"membership" (pathway membership matrix). Default: all analyses.}
+
+\item{run_plots}{Logical indicating whether to generate visualization plots 
+(default = TRUE).}
 }
 \value{
-A list containing three ggplot objects: pathway enrichment plot, GSEA plot, and RBC plot.
+A list containing results from the specified analyses. Possible components:
+\itemize{
+  \item \code{pathway_enrichment_results} - Data frame of pathway enrichment results
+  \item \code{gsea_results} - Data frame of GSEA analysis results
+  \item \code{metabolite_centrality} - Data frame of centrality analysis results
+  \item \code{pathway_plot} - ggplot object for pathway enrichment visualization
+  \item \code{impact_plot} - ggplot object for impact vs significance
+  \item \code{gsea_plot} - ggplot object for GSEA results
+  \item \code{rbc_plot} - ggplot object for relative betweenness centrality
+  \item \code{network_plot} - ggraph object for metabolite-pathway network
+  \item \code{heatmap_plot} - ComplexHeatmap object for enrichment significance
+  \item \code{membership_plot} - ComplexHeatmap object for pathway membership
+  \item \code{interaction_plot} - ggraph object for chemical interaction network
+}
 }
 \description{
-This function performs pathway enrichment analysis using Fisher’s exact test, impact plot, computes betweenness centrality for metabolites,
-and performs Metabolite Set Enrichment Analysis (MetSEA).
-It also generates plots for pathway enrichment, MetSEA,relative betweenness centrality (RBC), network plot, heatmap plot, membership plot, interaction plot.
+A modular tool for metabolite pathway enrichment analysis that can perform multiple
+analytical tasks including pathway enrichment, metabolite set enrichment analysis (GSEA),
+network centrality analysis, and interaction network visualization. The function can
+be run as a complete workflow or using individual analysis steps.
+}
+\details{
+This function performs comprehensive pathway analysis for metabolomics data.
+Users can run the complete workflow or call individual modular functions for
+specific analyses. See the individual function documentation for more details.
 }
 \examples{
-## ** Examples
-library(igraph)
-library(ggraph)
-library(ggplot2)
-library(openxlsx)
-library(dplyr)
-library(tidyr)
-library(fgsea)
-library(ggrepel)
-library(stringr)
-library(ComplexHeatmap)
-library(enrichmet)
+#' ## ** Complete workflow example
 
-# Generate example data with at least n=50 metabolites
+# Generate example data
 set.seed(1234)
-
-# Create 50 unique metabolites
 inputMetabolites <- paste0("M", 1:20)
 
-# Generate 10 pathways with random metabolites assigned
 pathway_names <- paste0("Pathway", 1:50)
 PathwayVsMetabolites <- data.frame(
   Pathway = rep(pathway_names, each = 1),
-  Metabolites = sapply(1:50, function(x) paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
+  Metabolites = sapply(1:50, function(x)
+    paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
 )
 
-# Add new pathway entries (Pathway101 and Pathway102)
+# Add specific pathway examples
 new_rows <- data.frame(
-  Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "pathway105"),
+  Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "Pathway105"),
   Metabolites = c(
     "M12,M13,M14,M15,M16,M1,M18,M3,M29,M6,M16,M4",
     "M6,M7,M8,M9,M10,M11,M9,M29,M6,M6,M16,M4",
@@ -78,48 +113,73 @@ new_rows <- data.frame(
     "M15,M16,M17,M18,M19,M20,M21,M4,M8,M10"
   )
 )
-
-# Combine with existing PathwayVsMetabolites
 PathwayVsMetabolites <- rbind(PathwayVsMetabolites, new_rows)
 
-# Generate example metabolite-level data
+# Generate example metabolite statistics for GSEA
 example_data <- data.frame(
   met_id = inputMetabolites,
-  pval = runif(20, 0.001, 0.05),  # Random p-values between 0.001 and 0.05
-  log2fc = rnorm(20, mean = 0, sd = 1)  # Log2 fold changes from normal distribution
+  pval = runif(20, 0.001, 0.05),
+  log2fc = rnorm(20, mean = 0, sd = 1)
 )
 
-# ---- 4. Create mapping_df ----
+# Create mapping data for STITCH network
 set.seed(42)
 mapping_df <- data.frame(
- KEGG_ID = inputMetabolites,
- PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
-STITCH_ID = paste0("CIDs", str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
+  KEGG_ID = inputMetabolites,
+  PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
+  STITCH_ID = paste0("CIDs", stringr::str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
 )
 
-# ---- 5. Create synthetic STITCH interaction data ----
+# Create synthetic STITCH interaction data
 stitch_ids <- mapping_df$STITCH_ID
-
 stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) \%>\%
- dplyr::filter(chemical1 != chemical2)
+  dplyr::filter(chemical1 != chemical2)
 
 set.seed(123)
 stitch_df <- stitch_pairs \%>\%
-slice_sample(n = 200) \%>\%
-dplyr::mutate(
-  similarity = runif(n(), 0, 1),
-  experimental = sample(0:500, n(), replace = TRUE),
-  database = sample(c(0, 300, 600, 900), n(), replace = TRUE),
-  textmining = sample(0:1000, n(), replace = TRUE),
-  combined_score = similarity * 200 + experimental + database + textmining
- ) \%>\%
- as_tibble()
+  dplyr::slice_sample(n = 200) \%>\%
+  dplyr::mutate(
+    similarity = runif(dplyr::n(), 0, 1),
+    experimental = sample(0:500, dplyr::n(), replace = TRUE),
+    database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
+    textmining = sample(0:1000, dplyr::n(), replace = TRUE),
+    combined_score = similarity * 200 + experimental + database + textmining
+  ) \%>\%
+  tibble::as_tibble()
 
-enrichmet(
-inputMetabolites = inputMetabolites,
-PathwayVsMetabolites = PathwayVsMetabolites, example_data,
-top_n = 20,
- mapping_df = mapping_df,
-stitch_df = stitch_df
+# Run complete analysis with all visualizations
+results <- enrichmet(
+  inputMetabolites = inputMetabolites,
+  PathwayVsMetabolites = PathwayVsMetabolites,
+  example_data = example_data,
+  top_n = 10,
+  mapping_df = mapping_df,
+  stitch_df = stitch_df,
+  analysis_type = c("enrichment", "gsea", "centrality", "network", "heatmap", "membership", "interaction")
 )
+
+# Access individual results
+enrichment_results <- results$pathway_enrichment_results
+head(enrichment_results)
+
+# View all plots (these will display in the help)
+results$pathway_plot
+results$impact_plot
+results$gsea_plot
+results$rbc_plot
+results$network_plot
+results$heatmap_plot
+results$membership_plot
+results$interaction_plot
+}
+\seealso{
+Individual analysis functions:
+\code{\link{prepare_gmt_data}} for GMT format conversion,
+\code{\link{calculate_metabolite_centrality}} for network centrality,
+\code{\link{perform_enrichment_analysis}} for pathway enrichment,
+\code{\link{perform_gsea_analysis}} for metabolite set enrichment,
+\code{\link{create_enrichment_plot}} for pathway visualization,
+\code{\link{create_impact_plot}} for impact vs significance,
+\code{\link{create_gsea_plot}} for GSEA results visualization,
+\code{\link{create_centrality_plot}} for centrality visualization
 }

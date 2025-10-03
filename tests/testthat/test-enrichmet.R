@@ -61,5 +61,15 @@ head(stitch_df)
 test_that("enrichmet returns expected output format", {
   result <- enrichmet(inputMetabolites, PathwayVsMetabolites=PathwayVsMetabolites, example_data, top_n = 100, p_value_cutoff = 1, kegg_lookup = kegg_lookup, mapping_df = mapping_df, stitch_df = stitch_df)
   expect_type(result, "list")
-  expect_named(result, c("pathway_plot", "impact_plot", "MetSEA_plot", "rbc_plot", "network_plot", "heatmap_plot", "membership_plot", "interaction_plot"))
+  expect_named(result, c("pathway_enrichment_results",
+                         "pathway_plot",
+                         "impact_plot",
+                         "gsea_results",
+                         "gsea_plot",
+                         "metabolite_centrality",
+                         "rbc_plot",
+                         "network_plot",
+                         "heatmap_plot",
+                         "membership_plot",
+                         "interaction_plot"))
 })

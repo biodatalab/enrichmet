@@ -15,8 +15,9 @@ vignette: >
 
 # Introduction
 
-Advances in metabolomics have enhanced our understanding of cellular processes by enabling the detection of hundreds of metabolites in a single experiment, offering insights into complex metabolic networks. Pathway Enrichment Analysis (PEA) is key to linking these metabolites to biological pathways, but existing tools often require multiple steps, lack robust visualization, depend on web-based interfaces, or rely on difficult to install R packages—hindering reproducibility and efficiency. To address these challenges, we present enrichmet, an R package for streamlined, reproducible pathway enrichment, metabolite set enrichment analysis (MetSEA), and network analysis. enrichmet integrates fgsea for fast MetSEA, igraph for topology-based metrics, and curated KEGG data for enrichment using Fisher’s Exact Test—all accessible via a single function call. Through a case study on experimental metabolomics data, we show that enrichmet outperforms existing tools in accuracy, speed, and usability. Its flexible framework also supports diverse data types and applications beyond KEGG, empowering researchers to extract deeper biological insights with minimal effort.
+Advances in metabolomics have enhanced our understanding of cellular processes by enabling the detection of hundreds of metabolites in a single experiment, offering insights into complex metabolic networks. Pathway Enrichment Analysis (PEA) is key to linking these metabolites to biological pathways, but existing tools often require multiple steps, lack robust visualization, depend on web-based interfaces, or rely on difficult to install R packages—hindering reproducibility and efficiency. To address these challenges, we present **enrichmet**, an R package for streamlined, reproducible pathway enrichment, metabolite set enrichment analysis (MetSEA), and network analysis. **enrichmet** integrates fgsea for fast MetSEA, igraph for topology-based metrics, and curated KEGG data for enrichment using Fisher’s Exact Test—all accessible via a single function call. Through a case study on experimental metabolomics data, we show that **enrichmet** outperforms existing tools in accuracy, speed, and usability. Its flexible framework also supports diverse data types and applications beyond KEGG, empowering researchers to extract deeper biological insights with minimal effort.
 
+**enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results. For added flexibility, the package also offers modular functions that allow users to tailor the workflow to specific needs. **enrichmet** emphasizes transparency and control, making outputs easy to access and integrate into broader R workflows. Its versatile framework extends beyond metabolomics, with applicability to lipidomics, proteomics, and other omics domains. Importantly, because enrichment is performed locally—without dependence on external web services, **enrichmet** is especially well suited for high-throughput and iterative analyses where speed and reproducibility are critical.
 
 **enrichmet** generates a rich set of visualizations, including:
 
@@ -29,53 +30,31 @@ Advances in metabolomics have enhanced our understanding of cellular processes b
 - **Pathway membership plot**
 - **Interaction network plot**
 
-Additionally, enrichmet exports both the **MetSEA** and **pathway enrichment** results as `.xlsx` tables, streamlining both analysis and reporting.
+The enrichmet() function produces three tables (S3 data.frame objects), which may optionally include the MSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects) as described above.
 
 # Installation
 
 You can install enrichmet as:
 
 ```r
-install.packages("remotes")
-remotes::install_git("https://github.com/biodatalab/enrichmet.git")
-# or 
-install.packages("devtools")
-devtools::install_git("https://github.com/biodatalab/enrichmet.git")
-# or
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("enrichmet")
 
 ```
 
-## Dependancies
-
 ```{r, Case study of KrasG12D mutation}
-library(igraph)
-library(ggraph)
-library(ggplot2)
-library(readxl)
-library(dplyr)
-library(tidyr)
-library(fgsea)
-library(ggrepel)
-library(stringr)
-library(ComplexHeatmap)
-library(readr)
-library(magrittr)
-library(circlize)
-library(scales)
-library(tibble)
-library(knitr)
-library(httr)
 library(BiocFileCache)
+library(readxl)
+library(readr)
+library(enrichmet)
 ```
 ## Required Input Files
 
 To run the **enrichmet** package, you need to provide at least the following three files:
 
 - **`PathwayVsMetabolites`**  
-This file defines the mapping between metabolic pathways and their associated metabolites, serving as the background reference for Fisher’s exact test–based enrichment analysis.
+This file defines the mapping between metabolic pathways and their associated metabolites, serving as the background reference for Fisher’s exact test–based enrichment analysis (see section 2.4).
 
 The mappings are derived from the KEGG database (https://www.kegg.jp/), accessed programmatically via the KEGGREST package. To ensure reproducibility and minimize run-time delays, curated human-specific pathway–metabolite mappings are periodically updated and archived on Zenodo [1].
   We provide a human-specific `PathwayVsMetabolites` file available here:  
@@ -83,16 +62,19 @@ The mappings are derived from the KEGG database (https://www.kegg.jp/), accessed
   However, users can supply a file tailored to their species of interest.
 
 - **`InputMetabolites`**  
-A list of metabolites from the user’s experimental dataset to be analyzed, typically consisting of metabolite identifiers that were detected or quantified in the study. This input is not provided by the package and must be prepared by the user. The file serves as the query set for enrichment analysis, and its identifiers should match those used in the background pathway–metabolite mappings (e.g., KEGG compound IDs).
+A list of metabolites from the user’s experimental dataset for analysis, typically consisting of metabolite identifiers (e.g., significant metabolites from differential analysis (see section 2.4)). This input is not provided by the package and must be prepared by the user. The file serves as the query set for enrichment analysis, and its identifiers should match those used in the background pathway–metabolite mappings (e.g., KEGG compound IDs).
 
-For demonstration purposes, we also include summary statistics derived from an example experimental dataset. These example data are intended solely to showcase the package workflow and will be described in detail in a subsequent publication.
+For demonstration purposes, we also include summary statistics derived from an example experimental dataset. These example data are intended solely to showcase the package workflow and will be described in detail in a subsequent publication. 
+
 
 - **`SummaryStatistics`**  
-Statistical results corresponding to the input metabolites, such as fold changes, p-values, or other relevant metrics. These results guide the enrichment analysis by reflecting the significance or effect size of each metabolite.
+The enrichment analysis requires statistical results associated with the input metabolites, such as fold changes, p-values, or other relevant effect size metrics (see section 2.4). These values guide the enrichment procedure by reflecting both the significance and the magnitude of change for each metabolite.
 
-This file is not provided by the package and must be prepared by the user. The information may be supplied as a separate data frame or retrieved directly from the rowData() of a SummarizedExperiment object, provided that it contains appropriate columns for metabolite identifiers, p-values, and fold changes.
+This information is not generated by the package and must be provided by the user. Summary statistics may be supplied either as a standalone data frame or extracted directly from the rowData() of a SummarizedExperiment object, provided that appropriate columns are available for metabolite identifiers, p-values, and fold changes (see section 2.4 example_data).
 
-For demonstration purposes, the package includes an example summary statistics dataset. These example data are included solely to illustrate the workflow and will be fully described in a subsequent publication.
+For demonstration purposes, the package includes an example summary statistics dataset. These example data are provided solely to illustrate the workflow and will be described in detail in a forthcoming publication.
+
+The **enrichmet**() function integrates both p-values and fold changes when performing MetSEA. By considering the direction and magnitude of changes, this approach yields richer biological insights than methods based only on binary classifications of "significant" versus "not significant."
 
 ## Optional Input Files
 
@@ -179,7 +161,6 @@ stitch_df <- read_tsv(stitch_path)
 head(stitch_df)
 #  Run enrichment analysis 
 #loading the package
-library(enrichmet)
 results <-enrichmet(
   inputMetabolites = inputMetabolites,
   PathwayVsMetabolites = PathwayVsMetabolites,example_data, kegg_lookup,
@@ -195,42 +176,42 @@ results <-enrichmet(
 ```{r display-plots1, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$pathway_plot)
 ```
-The plot displays the enriched pathways along with their corresponding -log10 p-values. Metabolite lists were used as input, and pathway enrichment was performed using Fisher's exact test based on metabolite-to-pathway mapping.
+Fig. 1. Pathway enrichment plot. The plot shows enriched pathways with their corresponding –log10 p-values. Circle size represents the number of metabolites associated with each pathway, while color indicates the adjusted p-value. Pathway enrichment was performed using Fisher’s exact test based on metabolite-to-pathway mappings, with metabolite lists as input.
 
 ```{r display-plots2, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$impact_plot)
 ```
 
-The plot presents the pathway impact analysis, combining enrichment significance (p-value) with Relative Betweenness Centrality (RBC) to highlight both statistical and topological relevance.
+Fig. 2. Pathway impact plot. The plot integrates enrichment significance with pathway topology to highlight the most influential pathways. The y-axis shows the −log10 p-value and x-axis shows the pathway impact value. Circle size reflects the pathway impact, while color represents the adjusted p-value. Together, these features emphasize pathways that are both statistically significant and topologically central.
 
 ```{r display-plots3, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$MetSEA_plot)
+print(results$gsea_plot)
 ```
-The plot displays the Metabolite Set Enrichment Analysis (MetSEA) results, highlighting significantly enriched metabolite sets.
+Fig. 3. Metabolite Set Enrichment Analysis (MetSEA) plot. The plot shows enriched pathways with their corresponding –log10 p-values. Circle size represents the number of metabolites associated with each pathway, while color indicates the Normalized Enrichment Score (NES).
 
 ```{r display-plots4, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$rbc_plot)
 ```
-The plot illustrates the relative betweenness centrality of the input metabolites, indicating their topological importance and potential regulatory influence within the metabolic network.
+Fig. 4. Relative Betweenness Plot. This plot displays the Relative Betweenness Centrality (RBC) of input metabolites, with RBC on the x-axis and corresponding values on the y-axis. It highlights the topological importance and potential regulatory influence of metabolites within the metabolic network.
 ```{r display-plots5, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$network_plot)
 ```
-The plot presents the network graph, highlighting the relationships between enriched pathways and input metabolites, and illustrating their connectivity and functional associations within the metabolic network.
+Fig. 5. Pathway–Metabolite Network Plot. This plot visualizes the relationships between enriched pathways and input metabolites, highlighting their connectivity and functional associations within the metabolic network. Edges indicate associations between pathways and their corresponding metabolites, while nodes are colored to distinguish pathways from metabolites.
 ```{r display-plots6, results='asis', fig.align='center', fig.width=12, fig.height=8}
 print(results$heatmap_plot)
 ```
-The heatmap displays the gradient of -log p-values, indicating the significance levels of the enriched pathways.
+Fig. 6. Pathway Heatmap. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap uses a gradient of −log10 p-values to indicate the significance of enriched pathways and the involvement of each metabolite within the corresponding pathway.
 
 ```{r display-plots7, results='asis', fig.align='center', fig.width=15, fig.height=10}
-cat('<div style="overflow-x: auto; width: 100%;">')
+
 ComplexHeatmap::draw(results$membership_plot)
-cat('</div>')
+
 ```
-The plot illustrates pathway membership by showing each pathway along with its associated metabolites.
-```{r display-plots8, results='asis', fig.align='center', fig.width=12, fig.height=8}
+Fig. 7. Pathway Membership plot. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap plot illustrates pathway membership by showing each pathway along with its associated metabolites.Only pathways with at least two mapped metabolites are included.
+```{r display-plots8, results='asis', fig.align='center', fig.width=12, fig.height=10}
 print(results$interaction_plot)
 ```
-The plot displays metabolite interactions derived from chemical-chemical interaction data obtained from STITCH.
+Fig. 8. Chemical-Chemical Interaction plot. The plot displays metabolite interactions derived from chemical-chemical interaction data obtained from STITCH. Metabolites are shown as nodes whose size scales with degree (the number of direct interaction partners). Edges represent experimentally validated or predicted biochemical relationship; and  edge opacity is mapped to the rescaled STITCH combined score (weight), with darker edges indicating higher-confidence interaction. 
 
 ## References
 
