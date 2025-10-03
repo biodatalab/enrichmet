@@ -18,8 +18,9 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-enrichmet performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites,
-and performs Metabolite Set Enrichment Analysis (MetSEA). It also generates plots for pathway enrichment, MetSEA, and relative betweenness centrality (RBC), and interaction plot.
+**enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results.
+
+**enrichmet** performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites, and performs Metabolite Set Enrichment Analysis (MetSEA). The **enrichmet**() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects).
 
 ## Installation
 
@@ -53,47 +54,35 @@ knitr::opts_chunk$set(
 This is a basic example 
 
 ```{r example}
-  library(igraph)
-  library(ggraph)
-  library(tidygraph)
-  library(ggplot2)
-  library(openxlsx)
-  library(dplyr)
-  library(tidyr)
-  library(fgsea)
-  library(purrr)
-  library(ggrepel)
-  library(stringr)
-  library(pheatmap)
-  library(ComplexHeatmap)
-  library(ggplotify)
-  library(enrichmet)
+library(enrichmet)
+library(dplyr)
+library(stringr)
+
 ## basic example code
 ## ** Examples
 
 # Generate example data with at least n=50 metabolites
 set.seed(1234)
 
-# Create 50 unique metabolites
+# Create 20 unique metabolites
 inputMetabolites <- paste0("M", 1:20)
 
-# ---- 1. Generate 10 pathways with random metabolites assigned ----
+# ---- 1. Generate 50 pathways with random metabolites assigned ----
 pathway_names <- paste0("Pathway", 1:50)
 PathwayVsMetabolites <- data.frame(
   Pathway = rep(pathway_names, each = 1),
   Metabolites = sapply(1:50, function(x) paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
 )
 
-# ---- 2. Add new pathway entries (Pathway101 and Pathway102) ----
+# ---- 2. Add new pathway entries ----
 new_rows <- data.frame(
-  Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "pathway105"),
+  Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "Pathway105"),
   Metabolites = c(
-    "M12,M13,M14,M15,M16,M1,M18,M3,M29,M6,M16,M4",
-    "M6,M7,M8,M9,M10,M11,M9,M29,M6,M6,M16,M4",
-    "M24,M25,M26,M27,M28,M29,M30,M29,M26,M5",
+    "M12,M13,M14,M15,M16,M1,M18,M3,M6,M16,M4",
+    "M6,M7,M8,M9,M10,M11,M9,M6,M16,M4",
+    "M24,M25,M26,M27,M28,M29,M30,M26,M5",
     "M13,M14,M15,M16,M17,M24,M27,M14",
     "M15,M16,M17,M18,M19,M20,M21,M4,M8,M10"
-    
   )
 )
 
@@ -112,35 +101,38 @@ set.seed(42)
 mapping_df <- data.frame(
   KEGG_ID = inputMetabolites,
   PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
-  STITCH_ID = paste0("CIDs", str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
+  STITCH_ID = paste0("CIDs", stringr::str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
 )
 
 # ---- 5. Create synthetic STITCH interaction data ----
 stitch_ids <- mapping_df$STITCH_ID
 
 stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) %>%
-  filter(chemical1 != chemical2)
+  dplyr::filter(chemical1 != chemical2)
 
 set.seed(123)
 stitch_df <- stitch_pairs %>%
-  slice_sample(n = 200) %>%
-  mutate(
-    similarity = runif(n(), 0, 1),
-    experimental = sample(0:500, n(), replace = TRUE),
-    database = sample(c(0, 300, 600, 900), n(), replace = TRUE),
-    textmining = sample(0:1000, n(), replace = TRUE),
+  dplyr::slice_sample(n = 200) %>%
+  dplyr::mutate(
+    similarity = runif(dplyr::n(), 0, 1),
+    experimental = sample(0:500, dplyr::n(), replace = TRUE),
+    database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
+    textmining = sample(0:1000, dplyr::n(), replace = TRUE),
     combined_score = similarity * 200 + experimental + database + textmining
-  ) %>%
-  as_tibble()
+  )
 
 # ---- 6. Run enrichment analysis ----
-enrichmet(
+results <- enrichmet(
   inputMetabolites = inputMetabolites,
-  PathwayVsMetabolites = PathwayVsMetabolites, example_data,
-  top_n = 20,
+  PathwayVsMetabolites = PathwayVsMetabolites, 
+  example_data = example_data,
+  top_n = 10,
   mapping_df = mapping_df,
   stitch_df = stitch_df
 )
+
+# Display the results
+print(results)
 
 ```
 
