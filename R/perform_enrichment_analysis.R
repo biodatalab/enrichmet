@@ -6,7 +6,7 @@
 #'        enrichment analysis is to be performed.
 #' @param PathwayVsMetabolites A data frame containing pathways and their associated 
 #'        metabolites. Must include columns 'Pathway' and 'Metabolites'.
-#' @param top_n An integer specifying the number of top pathways to return (default is 100).
+#' @param top_n An integer specifying the number of top significant pathways to return (default is 100).
 #' @param p_value_cutoff A numeric value for adjusting the p-value threshold for 
 #'        filtering significant pathways (default is 1, no filtering).
 #'
@@ -60,7 +60,7 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
         pathwayMetabolites <- unlist(strsplit(row$Metabolites, ","))
         matchedMet <- intersect(pathwayMetabolites, inputMetabolites)
         
-        # Fisher’s exact test
+        # Fisher's exact test
         a <- length(matchedMet)
         b <- length(setdiff(inputMetabolites, pathwayMetabolites))
         c <- length(setdiff(pathwayMetabolites, inputMetabolites))
@@ -99,6 +99,9 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
     results_df <- do.call(rbind, lapply(results, as.data.frame))
     results_df$Adjusted_P_value <- p.adjust(results_df$P_value, method = "BH")
     
+    # Calculate q-values (Storey's method)
+    results_df$Q_value <- calculate_qvalues(results_df$P_value)
+    
     # Filter & sort
     significant_results_df <- results_df %>%
         dplyr::filter(Adjusted_P_value < p_value_cutoff) %>%
@@ -109,4 +112,41 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
     }
     
     return(significant_results_df)
+}
+
+# Helper function to calculate q-values using Storey's method
+calculate_qvalues <- function(p_values, lambdas = seq(0, 0.9, 0.05)) {
+    # Remove NA p-values for calculation
+    valid_p <- p_values[!is.na(p_values)]
+    
+    if (length(valid_p) == 0) {
+        return(rep(NA, length(p_values)))
+    }
+    
+    # Estimate pi0 using multiple lambda values
+    pi0_estimates <- sapply(lambdas, function(lambda) {
+        mean(valid_p > lambda) / (1 - lambda)
+    })
+    
+    # Smooth pi0 estimate using simple linear regression (Storey's method)
+    pi0 <- min(1, max(0, coef(lm(pi0_estimates ~ lambdas))[1]))
+    
+    # Sort p-values
+    sorted_idx <- order(valid_p)
+    sorted_p <- valid_p[sorted_idx]
+    m <- length(sorted_p)
+    
+    # Calculate q-values
+    q_values <- numeric(m)
+    q_values[m] <- sorted_p[m] * pi0
+    for (i in (m-1):1) {
+        q_values[i] <- min(sorted_p[i] * m / i * pi0, q_values[i + 1])
+    }
+    
+    # Map back to original order
+    final_q_values <- numeric(length(p_values))
+    final_q_values[!is.na(p_values)] <- q_values[order(sorted_idx)]
+    final_q_values[is.na(p_values)] <- NA
+    
+    return(final_q_values)
 }

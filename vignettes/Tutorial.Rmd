@@ -17,7 +17,7 @@ vignette: >
 
 Advances in metabolomics have enhanced our understanding of cellular processes by enabling the detection of hundreds of metabolites in a single experiment, offering insights into complex metabolic networks. Pathway Enrichment Analysis (PEA) is key to linking these metabolites to biological pathways, but existing tools often require multiple steps, lack robust visualization, depend on web-based interfaces, or rely on difficult to install R packages—hindering reproducibility and efficiency. To address these challenges, we present **enrichmet**, an R package for streamlined, reproducible pathway enrichment, metabolite set enrichment analysis (MetSEA), and network analysis. **enrichmet** integrates fgsea for fast MetSEA, igraph for topology-based metrics, and curated KEGG data for enrichment using Fisher’s Exact Test—all accessible via a single function call. Through a case study on experimental metabolomics data, we show that **enrichmet** outperforms existing tools in accuracy, speed, and usability. Its flexible framework also supports diverse data types and applications beyond KEGG, empowering researchers to extract deeper biological insights with minimal effort.
 
-**enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results. For added flexibility, the package also offers modular functions that allow users to tailor the workflow to specific needs. **enrichmet** emphasizes transparency and control, making outputs easy to access and integrate into broader R workflows. Its versatile framework extends beyond metabolomics, with applicability to lipidomics, proteomics, and other omics domains. Importantly, because enrichment is performed locally—without dependence on external web services, **enrichmet** is especially well suited for high-throughput and iterative analyses where speed and reproducibility are critical.
+**enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results. To offer more flexibility, the package provides modular functions that let users customize the workflow to meet specific needs. **enrichmet** emphasizes transparency and control, making outputs easy to access and integrate into broader R workflows. Its adaptable framework extends beyond metabolomics, with applicability to lipidomics, proteomics, and other omics domains. Importantly, since enrichment happens locally without relying on external web services, **enrichmet** is ideal for high-throughput and iterative analyses where speed and consistency are essential.
 
 **enrichmet** generates a rich set of visualizations, including:
 
@@ -30,7 +30,7 @@ Advances in metabolomics have enhanced our understanding of cellular processes b
 - **Pathway membership plot**
 - **Interaction network plot**
 
-The enrichmet() function produces three tables (S3 data.frame objects), which may optionally include the MSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects) as described above.
+The enrichmet() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects) as described above.
 
 # Installation
 
@@ -164,7 +164,7 @@ head(stitch_df)
 results <-enrichmet(
   inputMetabolites = inputMetabolites,
   PathwayVsMetabolites = PathwayVsMetabolites,example_data, kegg_lookup,
-  top_n = 100,p_value_cutoff = 1,
+  top_n = 100,p_value_cutoff = 0.05,
   mapping_df = mapping_df,
   stitch_df = stitch_df
 )

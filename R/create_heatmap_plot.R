@@ -79,7 +79,6 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
         return(NULL)
     }
     
-    # Prepare data for heatmap
     data_filtered <- PathwayVsMetabolites %>%
         dplyr::mutate(Metabolites = strsplit(Metabolites, ",")) %>%
         tidyr::unnest(Metabolites) %>%
@@ -91,7 +90,6 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
         return(NULL)
     }
     
-    # Convert KEGG IDs to names for display if kegg_lookup is provided
     if (!is.null(kegg_lookup)) {
         data_filtered <- data_filtered %>%
             dplyr::left_join(kegg_lookup, by = c("Metabolites" = "kegg_id")) %>%
@@ -101,11 +99,9 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
     heatmap_matrix <- table(data_filtered$Metabolites, data_filtered$Pathway)
     heatmap_matrix <- as.matrix(heatmap_matrix)
     
-    # Create matrix with -log10 p-values
     logp_vec <- enrichment_results$Log_P_value
     names(logp_vec) <- enrichment_results$Pathway
     
-    # Only include pathways present in both the matrix and results
     common_pathways <- intersect(colnames(heatmap_matrix), names(logp_vec))
     if (length(common_pathways) == 0) {
         warning("No common pathways found between enrichment results and pathway data")
@@ -115,20 +111,24 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
     heatmap_matrix <- heatmap_matrix[, common_pathways, drop = FALSE]
     logp_vec <- logp_vec[common_pathways]
     
-    # Create weighted matrix
     heatmap_values <- sweep(heatmap_matrix, 2, logp_vec, `*`)
     
-    # Define color scale with 4 breaks for the gradient
     value_range <- range(heatmap_values[heatmap_values > 0])
     color_breaks <- seq(0, ceiling(max(value_range)), length.out = 4)
     
-    # White -> Blueish -> Red gradient
     white_blue_red_gradient <- c("#FFFFFF", "#6BAED6", "#EF3B2C", "#67000D")
     
-    # Create heatmap
+    # Calculate dynamic font sizes based on data size
+    n_rows <- nrow(heatmap_values)
+    n_cols <- ncol(heatmap_values)
+    
+    # Adjust font sizes based on matrix size
+    row_fontsize <- ifelse(n_rows > 30, 8, ifelse(n_rows > 15, 10, 12))
+    col_fontsize <- ifelse(n_cols > 20, 8, ifelse(n_cols > 10, 10, 12))
+    
     heatmap_plot <- ComplexHeatmap::Heatmap(
         heatmap_values,
-        name = "Enrichment\nScore",
+        name = "-log10(P-value)",
         col = circlize::colorRamp2(color_breaks, white_blue_red_gradient),
         cluster_rows = TRUE,
         cluster_columns = TRUE,
@@ -138,20 +138,19 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
         column_names_rot = 45,
         border = TRUE,
         rect_gp = grid::gpar(col = "white", lwd = 0.5),
-        row_names_gp = grid::gpar(fontsize = 10),
-        column_names_gp = grid::gpar(fontsize = 10),
+        row_names_gp = grid::gpar(fontsize = row_fontsize),
+        column_names_gp = grid::gpar(fontsize = col_fontsize),
         column_title = "Metabolite-Pathway Enrichment Significance",
-        column_title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+        column_title_gp = grid::gpar(fontsize = 14, fontface = "bold"),
         row_title = "Metabolites",
-        row_title_gp = grid::gpar(fontsize = 11, fontface = "bold"),
+        row_title_gp = grid::gpar(fontsize = 13, fontface = "bold"),
         heatmap_legend_param = list(
             title = "Enrichment\nScore",
-            title_gp = grid::gpar(fontsize = 10, fontface = "bold"),
-            labels_gp = grid::gpar(fontsize = 9),
-            legend_height = grid::unit(3, "cm")
-        ),
-        width = ncol(heatmap_values) * grid::unit(0.6, "cm"),
-        height = nrow(heatmap_values) * grid::unit(0.4, "cm")
+            title_gp = grid::gpar(fontsize = 11, fontface = "bold"),
+            labels_gp = grid::gpar(fontsize = 10),
+            legend_height = grid::unit(4, "cm")
+        )
+        # REMOVED: width and height parameters - let it auto-size
     )
     
     return(heatmap_plot)

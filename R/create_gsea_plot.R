@@ -63,7 +63,7 @@ create_gsea_plot <- function(gsea_results, top_n = 20) {
         ggplot2::geom_point(alpha = 0.8) +
         ggplot2::labs(
             title = "Metabolite Set Enrichment Analysis",
-            x = "-log₁₀(p-value)", 
+            x = "-log10(p-value)", 
             y = "Pathway",
             size = "Metabolite Count",
             color = "NES"

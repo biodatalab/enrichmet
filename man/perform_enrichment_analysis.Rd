@@ -18,7 +18,7 @@ enrichment analysis is to be performed.}
 \item{PathwayVsMetabolites}{A data frame containing pathways and their associated 
 metabolites. Must include columns 'Pathway' and 'Metabolites'.}
 
-\item{top_n}{An integer specifying the number of top pathways to return (default is 100).}
+\item{top_n}{An integer specifying the number of top significant pathways to return (default is 100).}
 
 \item{p_value_cutoff}{A numeric value for adjusting the p-value threshold for 
 filtering significant pathways (default is 1, no filtering).}
