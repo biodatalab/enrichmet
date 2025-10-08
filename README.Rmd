@@ -20,7 +20,16 @@ knitr::opts_chunk$set(
 
 **enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results.
 
-**enrichmet** performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites, and performs Metabolite Set Enrichment Analysis (MetSEA). The **enrichmet**() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects).
+**enrichmet** performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites, and performs Metabolite Set Enrichment Analysis (MetSEA). The **enrichmet**() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects):
+
+- **Pathway enrichment plot**
+- **Pathway impact plot**
+- **MetSEA plot**
+- **RBC plot**
+- **Network graph**
+- **Pathway heatmap**
+- **Pathway membership plot**
+- **Interaction network plot**
 
 ## Installation
 
