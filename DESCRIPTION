@@ -36,6 +36,7 @@ Imports:
     scales,
     tibble,
     readr,
+    qvalue
 Suggests: 
     knitr,
     readxl,

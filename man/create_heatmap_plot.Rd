@@ -8,7 +8,10 @@ create_heatmap_plot(
   enrichment_results,
   PathwayVsMetabolites,
   inputMetabolites,
-  kegg_lookup = NULL
+  kegg_lookup = NULL,
+  min_pathways = 1,
+  min_metabolites = 1,
+  base_font_size = 14
 )
 }
 \arguments{

@@ -2,39 +2,91 @@
 % Please edit documentation in R/perform_gsea_analysis.R
 \name{perform_gsea_analysis}
 \alias{perform_gsea_analysis}
-\title{Perform Metabolite Set Enrichment Analysis (GSEA)}
+\title{Perform GSEA-style Pathway Enrichment Analysis}
 \usage{
 perform_gsea_analysis(example_data, PathwayVsMetabolites)
 }
 \arguments{
-\item{example_data}{A data frame containing metabolite-level data for GSEA analysis. 
-Should include columns "met_id", "pval", and "log2fc".}
+\item{input_data}{A data frame containing at least three columns:
+\describe{
+  \item{met_id}{Character vector of metabolite identifiers.}
+  \item{log2fc}{Numeric vector of log2 fold changes or other ranking metric.}
+  \item{pval}{Numeric vector of p-values associated with each metabolite (optional for ranking).}
+}}
 
-\item{PathwayVsMetabolites}{A data frame containing pathways and their associated 
-metabolites. Must include columns 'Pathway' and 'Metabolites'.}
+\item{pathway_map}{A data frame with two columns:
+\describe{
+  \item{Pathway}{Pathway name or ID.}
+  \item{Metabolites}{Comma-separated metabolite identifiers belonging to each pathway.}
+}}
+
+\item{minSize}{Integer. Minimum number of metabolites in a pathway to test (default = 2).}
+
+\item{maxSize}{Integer. Maximum number of metabolites in a pathway to test (default = 500).}
+
+\item{nperm}{Integer. Number of permutations used for significance estimation (default = 1000).}
 }
 \value{
-A data frame of GSEA results including normalized enrichment scores (NES) 
-        and p-values.
+A data frame containing the GSEA enrichment results, including:
+\itemize{
+  \item pathway – pathway name
+  \item pval – nominal p-value
+  \item padj – adjusted p-value (Benjamini–Hochberg)
+  \item ES – enrichment score
+  \item NES – normalized enrichment score
+  \item size – number of metabolites in the pathway
+  \item leadingEdge – subset of metabolites driving the enrichment
+}
 }
 \description{
-Implements pre-ranked GSEA using fgsea algorithm for metabolomics data.
+This function performs Gene Set Enrichment Analysis (GSEA) adapted for metabolomics data,
+testing whether predefined metabolite sets (pathways) are enriched among ranked metabolites.
+}
+\details{
+Metabolites are ranked by \code{log2fc} (descending), and enrichment is tested using
+the running-sum statistic from the \code{fgsea} algorithm. Only pathways with
+size between \code{minSize} and \code{maxSize} are tested.
 }
 \examples{
-# Create example data
-example_data <- data.frame(
-  met_id = c("M1", "M2", "M3", "M4", "M5"),
-  pval = c(0.001, 0.01, 0.05, 0.1, 0.5),
-  log2fc = c(2.0, 1.5, -1.0, 0.5, -0.5)
+# Generate example data for GSEA
+set.seed(1234)
+inputMetabolites <- paste0("M", 1:20)
+
+# Create pathway definitions
+pathway_names <- paste0("Pathway", 1:20)
+PathwayVsMetabolites <- data.frame(
+  Pathway = rep(pathway_names, each = 1),
+  Metabolites = sapply(1:20, function(x)
+    paste(sample(inputMetabolites, sample(5:10, 1)), collapse = ","))
 )
 
-PathwayVsMetabolites <- data.frame(
-  Pathway = c("Pathway1", "Pathway2"),
-  Metabolites = c("M1,M2,M3", "M3,M4,M5")
+# Generate example metabolite statistics for GSEA
+example_data <- data.frame(
+  met_id = inputMetabolites,
+  pval = runif(20, 0.001, 0.05),
+  log2fc = rnorm(20, mean = 0, sd = 1)
 )
 
 # Perform GSEA analysis
 gsea_results <- perform_gsea_analysis(example_data, PathwayVsMetabolites)
-head(gsea_results)
-# See ?enrichmet for complete examples
+
+# Show top results
+head(gsea_results, 5)
+
+# Expected output structure:
+#   pathway        pval       padj   log2err        ES      NES size
+# 1 Pathway5  0.00123456 0.01234567 0.1234567 0.8765432 2.345678    8
+# 2 Pathway12 0.01234567 0.04567891 0.2345678 0.7654321 1.987654    6
+# 3 Pathway8  0.03456789 0.07890123 0.3456789 0.6543210 1.543210    7
+
+# Show top enriched pathway details
+if (nrow(gsea_results) > 0) {
+  top_pathway <- gsea_results[1, ]
+  cat("Top enriched pathway:", top_pathway$pathway, "\n")
+  cat("Normalized Enrichment Score (NES):", round(top_pathway$NES, 3), "\n")
+  cat("P-value:", format.pval(top_pathway$pval, digits = 3), "\n")
+  cat("Adjusted P-value:", format.pval(top_pathway$padj, digits = 3), "\n")
+  cat("Pathway size:", top_pathway$size, "metabolites\n")
+}
+
 }

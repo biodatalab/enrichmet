@@ -32,6 +32,11 @@
 #' @export
 perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites, 
                                         top_n = 100, p_value_cutoff = 1) {
+    # Load required package
+    if (!requireNamespace("qvalue", quietly = TRUE)) {
+        stop("Please install the 'qvalue' package: install.packages('qvalue')")
+    }
+    
     # Input validation
     if (!is.character(inputMetabolites) || length(inputMetabolites) == 0) {
         stop("inputMetabolites must be a non-empty character vector")
@@ -59,6 +64,19 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
         pathway <- row$Pathway
         pathwayMetabolites <- unlist(strsplit(row$Metabolites, ","))
         matchedMet <- intersect(pathwayMetabolites, inputMetabolites)
+        
+        # Skip Fisher's test if no matches
+        if (length(matchedMet) == 0) {
+            results[[i]] <- data.frame(
+                Pathway = pathway,
+                P_value = 1.0,
+                Log_P_value = 0,
+                Impact = 0,
+                Coverage = 0,
+                Count = 0
+            )
+            next
+        }
         
         # Fisher's exact test
         a <- length(matchedMet)
@@ -96,14 +114,38 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
     }
     
     # Combine and adjust
-    results_df <- do.call(rbind, lapply(results, as.data.frame))
-    results_df$Adjusted_P_value <- p.adjust(results_df$P_value, method = "BH")
+    results_combined <- do.call(rbind, lapply(results, as.data.frame))
+    results_combined$Adjusted_P_value <- p.adjust(results_combined$P_value, method = "BH")
     
-    # Calculate q-values (Storey's method)
-    results_df$Q_value <- calculate_qvalues(results_df$P_value)
+    # Clean p-values for qvalue calculation
+    clean_p_values <- results_combined$P_value
+    
+    # Handle edge cases for qvalue
+    if (all(is.na(clean_p_values))) {
+        results_combined$Q_value <- NA
+    } else {
+        # Remove NA/NaN values and ensure p-values are in [0, 1]
+        clean_p_values <- clean_p_values[!is.na(clean_p_values) & !is.nan(clean_p_values)]
+        clean_p_values <- pmax(pmin(clean_p_values, 1), 0)  # Clamp to [0, 1]
+        
+        # Only calculate q-values if there are valid p-values
+        if (length(clean_p_values) > 0 && any(clean_p_values > 0 & clean_p_values < 1)) {
+            qobj <- qvalue::qvalue(clean_p_values)
+            # Create full Q_value vector with NA for invalid entries
+            full_qvalues <- rep(NA, nrow(results_combined))
+            valid_indices <- which(!is.na(results_combined$P_value) & 
+                                       !is.nan(results_combined$P_value) &
+                                       results_combined$P_value >= 0 & 
+                                       results_combined$P_value <= 1)
+            full_qvalues[valid_indices] <- qobj$qvalues
+            results_combined$Q_value <- full_qvalues
+        } else {
+            results_combined$Q_value <- NA
+        }
+    }
     
     # Filter & sort
-    significant_results_df <- results_df %>%
+    significant_results_df <- results_combined %>%
         dplyr::filter(Adjusted_P_value < p_value_cutoff) %>%
         dplyr::arrange(desc(Log_P_value))
     
@@ -112,41 +154,4 @@ perform_enrichment_analysis <- function(inputMetabolites, PathwayVsMetabolites,
     }
     
     return(significant_results_df)
-}
-
-# Helper function to calculate q-values using Storey's method
-calculate_qvalues <- function(p_values, lambdas = seq(0, 0.9, 0.05)) {
-    # Remove NA p-values for calculation
-    valid_p <- p_values[!is.na(p_values)]
-    
-    if (length(valid_p) == 0) {
-        return(rep(NA, length(p_values)))
-    }
-    
-    # Estimate pi0 using multiple lambda values
-    pi0_estimates <- sapply(lambdas, function(lambda) {
-        mean(valid_p > lambda) / (1 - lambda)
-    })
-    
-    # Smooth pi0 estimate using simple linear regression (Storey's method)
-    pi0 <- min(1, max(0, coef(lm(pi0_estimates ~ lambdas))[1]))
-    
-    # Sort p-values
-    sorted_idx <- order(valid_p)
-    sorted_p <- valid_p[sorted_idx]
-    m <- length(sorted_p)
-    
-    # Calculate q-values
-    q_values <- numeric(m)
-    q_values[m] <- sorted_p[m] * pi0
-    for (i in (m-1):1) {
-        q_values[i] <- min(sorted_p[i] * m / i * pi0, q_values[i + 1])
-    }
-    
-    # Map back to original order
-    final_q_values <- numeric(length(p_values))
-    final_q_values[!is.na(p_values)] <- q_values[order(sorted_idx)]
-    final_q_values[is.na(p_values)] <- NA
-    
-    return(final_q_values)
 }

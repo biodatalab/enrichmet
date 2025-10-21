@@ -73,7 +73,9 @@
 #' @importFrom circlize colorRamp2
 #' @importFrom grid gpar
 #' @export
-create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputMetabolites, kegg_lookup = NULL) {
+create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputMetabolites, 
+                                kegg_lookup = NULL, min_pathways = 1, min_metabolites = 1, 
+                                base_font_size = 14) {
     if (nrow(enrichment_results) == 0) {
         warning("No significant pathways found for heatmap")
         return(NULL)
@@ -99,37 +101,61 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
     heatmap_matrix <- table(data_filtered$Metabolites, data_filtered$Pathway)
     heatmap_matrix <- as.matrix(heatmap_matrix)
     
+    # Apply filtering based on user input
+    pathway_counts <- colSums(heatmap_matrix)
+    metabolite_counts <- rowSums(heatmap_matrix)
+    
+    # Filter pathways and metabolites
+    keep_pathways <- pathway_counts >= min_pathways
+    keep_metabolites <- metabolite_counts >= min_metabolites
+    
+    if (sum(keep_pathways) == 0 || sum(keep_metabolites) == 0) {
+        warning("No pathways or metabolites meet the filtering criteria for heatmap")
+        return(NULL)
+    }
+    
+    filtered_matrix <- heatmap_matrix[keep_metabolites, keep_pathways, drop = FALSE]
+    
     logp_vec <- enrichment_results$Log_P_value
     names(logp_vec) <- enrichment_results$Pathway
     
-    common_pathways <- intersect(colnames(heatmap_matrix), names(logp_vec))
+    common_pathways <- intersect(colnames(filtered_matrix), names(logp_vec))
     if (length(common_pathways) == 0) {
         warning("No common pathways found between enrichment results and pathway data")
         return(NULL)
     }
     
-    heatmap_matrix <- heatmap_matrix[, common_pathways, drop = FALSE]
+    filtered_matrix <- filtered_matrix[, common_pathways, drop = FALSE]
     logp_vec <- logp_vec[common_pathways]
     
-    heatmap_values <- sweep(heatmap_matrix, 2, logp_vec, `*`)
+    heatmap_values <- sweep(filtered_matrix, 2, logp_vec, `*`)
     
     value_range <- range(heatmap_values[heatmap_values > 0])
-    color_breaks <- seq(0, ceiling(max(value_range)), length.out = 4)
     
-    white_blue_red_gradient <- c("#FFFFFF", "#6BAED6", "#EF3B2C", "#67000D")
+    # PERFECT COLOR GRADIENT - FIXED VARIABLE NAME
+    if (length(value_range) > 1 && !any(is.na(value_range)) && value_range[2] > value_range[1]) {
+        color_breaks <- seq(value_range[1], value_range[2], length.out = 3)
+        white_blue_red_gradient <- c("#F7F7F7", "#EF8A62", "#B2182B")
+    } else {
+        # Fallback if range issues
+        color_breaks <- c(0, 0.5, 1)
+        white_blue_red_gradient <- c("#F7F7F7", "#EF8A62", "#B2182B")
+    }
     
-    # Calculate dynamic font sizes based on data size
+    # Calculate dynamic font sizes based on filtered matrix size
     n_rows <- nrow(heatmap_values)
     n_cols <- ncol(heatmap_values)
     
-    # Adjust font sizes based on matrix size
-    row_fontsize <- ifelse(n_rows > 30, 8, ifelse(n_rows > 15, 10, 12))
-    col_fontsize <- ifelse(n_cols > 20, 8, ifelse(n_cols > 10, 10, 12))
+    # Adjust font sizes based on matrix size with larger base size
+    row_fontsize <- ifelse(n_rows > 30, base_font_size - 4, 
+                           ifelse(n_rows > 15, base_font_size - 2, base_font_size))
+    col_fontsize <- ifelse(n_cols > 20, base_font_size - 4, 
+                           ifelse(n_cols > 10, base_font_size - 2, base_font_size))
     
     heatmap_plot <- ComplexHeatmap::Heatmap(
         heatmap_values,
         name = "-log10(P-value)",
-        col = circlize::colorRamp2(color_breaks, white_blue_red_gradient),
+        col = circlize::colorRamp2(color_breaks, white_blue_red_gradient),  # FIXED: consistent variable name
         cluster_rows = TRUE,
         cluster_columns = TRUE,
         show_row_names = TRUE,
@@ -138,19 +164,18 @@ create_heatmap_plot <- function(enrichment_results, PathwayVsMetabolites, inputM
         column_names_rot = 45,
         border = TRUE,
         rect_gp = grid::gpar(col = "white", lwd = 0.5),
-        row_names_gp = grid::gpar(fontsize = row_fontsize),
-        column_names_gp = grid::gpar(fontsize = col_fontsize),
+        row_names_gp = grid::gpar(fontsize = row_fontsize, fontface = "bold"),
+        column_names_gp = grid::gpar(fontsize = col_fontsize, fontface = "bold"),
         column_title = "Metabolite-Pathway Enrichment Significance",
-        column_title_gp = grid::gpar(fontsize = 14, fontface = "bold"),
+        column_title_gp = grid::gpar(fontsize = base_font_size + 2, fontface = "bold"),
         row_title = "Metabolites",
-        row_title_gp = grid::gpar(fontsize = 13, fontface = "bold"),
+        row_title_gp = grid::gpar(fontsize = base_font_size + 2, fontface = "bold"),
         heatmap_legend_param = list(
-            title = "Enrichment\nScore",
-            title_gp = grid::gpar(fontsize = 11, fontface = "bold"),
-            labels_gp = grid::gpar(fontsize = 10),
+            title = "-log10(P-value)",
+            title_gp = grid::gpar(fontsize = base_font_size, fontface = "bold"),
+            labels_gp = grid::gpar(fontsize = base_font_size - 2),
             legend_height = grid::unit(4, "cm")
         )
-        # REMOVED: width and height parameters - let it auto-size
     )
     
     return(heatmap_plot)

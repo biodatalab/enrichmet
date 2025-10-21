@@ -52,6 +52,12 @@ utils::globalVariables(
         "logp_vec"
     )
 )
+# Add these import statements
+#' @import dplyr
+#' @import tidyr
+#' @importFrom tibble as_tibble
+#' @importFrom stringr str_pad
+NULL
 # enrichmet: Pathway enrichment and visualization for metabolomics
 # Copyright (C) 2025 Yonatan Ayalew Mekonnen
 #
@@ -135,19 +141,19 @@ utils::globalVariables(
 #' \code{\link{create_centrality_plot}} for centrality visualization
 #'
 #' @examples
-#' #' ## ** Complete workflow example
-#'
+#' ## ** Complete workflow example
+#' 
 #' # Generate example data
 #' set.seed(1234)
 #' inputMetabolites <- paste0("M", 1:20)
-#'
+#' 
 #' pathway_names <- paste0("Pathway", 1:50)
 #' PathwayVsMetabolites <- data.frame(
 #'   Pathway = rep(pathway_names, each = 1),
 #'   Metabolites = sapply(1:50, function(x)
 #'     paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
 #' )
-#'
+#' 
 #' # Add specific pathway examples
 #' new_rows <- data.frame(
 #'   Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "Pathway105"),
@@ -160,14 +166,14 @@ utils::globalVariables(
 #'   )
 #' )
 #' PathwayVsMetabolites <- rbind(PathwayVsMetabolites, new_rows)
-#'
+#' 
 #' # Generate example metabolite statistics for GSEA
 #' example_data <- data.frame(
 #'   met_id = inputMetabolites,
 #'   pval = runif(20, 0.001, 0.05),
 #'   log2fc = rnorm(20, mean = 0, sd = 1)
 #' )
-#'
+#' 
 #' # Create mapping data for STITCH network
 #' set.seed(42)
 #' mapping_df <- data.frame(
@@ -175,24 +181,23 @@ utils::globalVariables(
 #'   PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
 #'   STITCH_ID = paste0("CIDs", stringr::str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
 #' )
-#'
+#' 
 #' # Create synthetic STITCH interaction data
 #' stitch_ids <- mapping_df$STITCH_ID
-#' stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) %>%
-#'   dplyr::filter(chemical1 != chemical2)
-#'
+#' stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids)
+#' stitch_pairs <- dplyr::filter(stitch_pairs, chemical1 != chemical2)
+#' 
 #' set.seed(123)
-#' stitch_df <- stitch_pairs %>%
-#'   dplyr::slice_sample(n = 200) %>%
-#'   dplyr::mutate(
-#'     similarity = runif(dplyr::n(), 0, 1),
-#'     experimental = sample(0:500, dplyr::n(), replace = TRUE),
-#'     database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
-#'     textmining = sample(0:1000, dplyr::n(), replace = TRUE),
-#'     combined_score = similarity * 200 + experimental + database + textmining
-#'   ) %>%
-#'   tibble::as_tibble()
-#'
+#' stitch_pairs <- dplyr::slice_sample(stitch_pairs, n = 200)
+#' stitch_df <- dplyr::mutate(stitch_pairs,
+#'   similarity = runif(dplyr::n(), 0, 1),
+#'   experimental = sample(0:500, dplyr::n(), replace = TRUE),
+#'   database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
+#'   textmining = sample(0:1000, dplyr::n(), replace = TRUE),
+#'   combined_score = similarity * 200 + experimental + database + textmining
+#' )
+#' stitch_df <- tibble::as_tibble(stitch_df)
+#' 
 #' # Run complete analysis with all visualizations
 #' results <- enrichmet(
 #'   inputMetabolites = inputMetabolites,
@@ -203,18 +208,18 @@ utils::globalVariables(
 #'   stitch_df = stitch_df,
 #'   analysis_type = c("enrichment", "gsea", "centrality", "network", "heatmap", "membership", "interaction")
 #' )
-#'
+#' 
 #' # Access individual results
 #' enrichment_results <- results$pathway_enrichment_results
 #' head(enrichment_results)
-#'
+#' 
 #' # View all plots (these will display in the help)
 #' results$pathway_plot
 #' results$impact_plot
 #' results$gsea_plot
 #' results$rbc_plot
 #' results$network_plot
-#' results$heatmap_plot
+#' results$heatmap_plot 
 #' results$membership_plot
 #' results$interaction_plot
 #' @export

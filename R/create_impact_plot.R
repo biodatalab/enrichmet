@@ -57,7 +57,7 @@ create_impact_plot <- function(significant_results_df) {
     ) +
         ggplot2::geom_point(alpha = 0.85) +
         ggrepel::geom_text_repel(
-            size = 3.2, 
+            size = 4.5, 
             max.overlaps = 20, 
             box.padding = 0.35,
             point.padding = 0.3,
@@ -79,9 +79,10 @@ create_impact_plot <- function(significant_results_df) {
             x = "Pathway Impact", 
             y = "-log10(P-value)"
         ) +
-        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme_minimal(base_size = 14) +
         ggplot2::theme(
             legend.position = "right",
+            panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14)
         )
 }

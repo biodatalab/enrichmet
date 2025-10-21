@@ -44,10 +44,10 @@ create_centrality_plot <- function(centrality_results, top_n = 20, kegg_lookup =
         return(NULL)
     }
     
-    # Prepare data for plotting
+    # Prepare top metabolites
     top_central <- head(centrality_results, top_n)
     
-    # Add display names if available
+    # Add display names if lookup provided
     if (!is.null(kegg_lookup)) {
         top_central <- top_central %>%
             dplyr::left_join(kegg_lookup, by = c("Metabolite" = "kegg_id")) %>%
@@ -55,6 +55,10 @@ create_centrality_plot <- function(centrality_results, top_n = 20, kegg_lookup =
     } else {
         top_central$Display_Name <- top_central$Metabolite
     }
+    
+    # Determine axis limits for safe plotting
+    y_min <- 0  # always start at 0
+    y_max <- max(top_central$RBC_Metabolite, na.rm = TRUE) * 1.05  # 5% extra space above highest bar
     
     ggplot2::ggplot(
         top_central,
@@ -69,10 +73,12 @@ create_centrality_plot <- function(centrality_results, top_n = 20, kegg_lookup =
         ) +
         ggplot2::theme_minimal(base_size = 12) +
         ggplot2::theme(
-            axis.text.y = element_text(size = 10, color = "black"),
-            axis.text.x = element_text(size = 10, color = "black"),
+            axis.text.y = element_text(size = 12, color = "black"),
+            axis.text.x = element_text(size = 12, color = "black"),
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
-            plot.subtitle = element_text(hjust = 0.5, size = 11)
+            plot.subtitle = element_text(hjust = 0.5, size = 11), 
+            panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
         ) +
-        ggplot2::coord_flip()
+        ggplot2::coord_flip() +
+        ggplot2::scale_y_continuous(expand = c(0, 0), limits = c(y_min, y_max))
 }

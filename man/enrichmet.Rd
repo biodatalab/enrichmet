@@ -89,7 +89,7 @@ Users can run the complete workflow or call individual modular functions for
 specific analyses. See the individual function documentation for more details.
 }
 \examples{
-#' ## ** Complete workflow example
+## ** Complete workflow example
 
 # Generate example data
 set.seed(1234)
@@ -132,20 +132,19 @@ mapping_df <- data.frame(
 
 # Create synthetic STITCH interaction data
 stitch_ids <- mapping_df$STITCH_ID
-stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) \%>\%
-  dplyr::filter(chemical1 != chemical2)
+stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids)
+stitch_pairs <- dplyr::filter(stitch_pairs, chemical1 != chemical2)
 
 set.seed(123)
-stitch_df <- stitch_pairs \%>\%
-  dplyr::slice_sample(n = 200) \%>\%
-  dplyr::mutate(
-    similarity = runif(dplyr::n(), 0, 1),
-    experimental = sample(0:500, dplyr::n(), replace = TRUE),
-    database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
-    textmining = sample(0:1000, dplyr::n(), replace = TRUE),
-    combined_score = similarity * 200 + experimental + database + textmining
-  ) \%>\%
-  tibble::as_tibble()
+stitch_pairs <- dplyr::slice_sample(stitch_pairs, n = 200)
+stitch_df <- dplyr::mutate(stitch_pairs,
+  similarity = runif(dplyr::n(), 0, 1),
+  experimental = sample(0:500, dplyr::n(), replace = TRUE),
+  database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
+  textmining = sample(0:1000, dplyr::n(), replace = TRUE),
+  combined_score = similarity * 200 + experimental + database + textmining
+)
+stitch_df <- tibble::as_tibble(stitch_df)
 
 # Run complete analysis with all visualizations
 results <- enrichmet(
@@ -168,7 +167,7 @@ results$impact_plot
 results$gsea_plot
 results$rbc_plot
 results$network_plot
-results$heatmap_plot
+results$heatmap_plot 
 results$membership_plot
 results$interaction_plot
 }

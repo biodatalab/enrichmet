@@ -79,9 +79,9 @@ create_gsea_plot <- function(gsea_results, top_n = 20) {
         ) +
         ggplot2::theme_minimal(base_size = 12) +
         ggplot2::theme(
-            axis.text.y = element_text(size = 10, color = "black"),
-            axis.text.x = element_text(size = 10, color = "black"),
+            axis.text.y = element_text(size = 12, color = "black"),
+            axis.text.x = element_text(size = 12, color = "black"),
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
-            legend.position = "right"
+            legend.position = "right",   panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
         )
 }

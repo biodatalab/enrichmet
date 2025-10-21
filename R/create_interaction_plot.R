@@ -131,7 +131,7 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df, keg
         ggraph::geom_node_point(aes(size = degree, color = as.factor(component)), alpha = 0.8) +
         ggraph::geom_node_text(
             aes(label = stringr::str_wrap(display_name, 12)),
-            size = 3,
+            size = 4.5,
             repel = TRUE,
             max.overlaps = 20,
             family = "sans"
