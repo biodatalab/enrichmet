@@ -4,89 +4,90 @@
 \alias{perform_gsea_analysis}
 \title{Perform GSEA-style Pathway Enrichment Analysis}
 \usage{
-perform_gsea_analysis(example_data, PathwayVsMetabolites)
+perform_gsea_analysis(
+  example_data,
+  PathwayVsMetabolites,
+  minSize = 5,
+  maxSize = 500,
+  ranking_method = "signed_pval",
+  id_col = NULL,
+  pval_col = "pval",
+  padj_col = "padj",
+  log2fc_col = "log2fc",
+  nperm = 1000,
+  seed = NULL,
+  kegg_lookup = NULL
+)
 }
 \arguments{
-\item{input_data}{A data frame containing at least three columns:
-\describe{
-  \item{met_id}{Character vector of metabolite identifiers.}
-  \item{log2fc}{Numeric vector of log2 fold changes or other ranking metric.}
-  \item{pval}{Numeric vector of p-values associated with each metabolite (optional for ranking).}
-}}
+\item{example_data}{A data frame containing metabolite statistics. Should contain:
+- Either 'kegg_id' or 'met_id' column for metabolite identifiers
+- 'log2fc' and 'pval' columns for ranking}
 
-\item{pathway_map}{A data frame with two columns:
-\describe{
-  \item{Pathway}{Pathway name or ID.}
-  \item{Metabolites}{Comma-separated metabolite identifiers belonging to each pathway.}
-}}
+\item{PathwayVsMetabolites}{A data frame with pathway information containing 'Pathway' and 'Metabolites' columns.}
 
-\item{minSize}{Integer. Minimum number of metabolites in a pathway to test (default = 2).}
+\item{minSize}{Minimum number of metabolites in a pathway to test (default = 5).}
 
-\item{maxSize}{Integer. Maximum number of metabolites in a pathway to test (default = 500).}
+\item{maxSize}{Maximum number of metabolites in a pathway to test (default = 500).}
 
-\item{nperm}{Integer. Number of permutations used for significance estimation (default = 1000).}
+\item{ranking_method}{Method for ranking metabolites. Options: "signed_pval" (default), 
+"absolute_fc", or "pval_only".}
+
+\item{id_col}{Column name in example_data containing metabolite IDs. 
+Default is NULL (auto-detects 'kegg_id' or 'met_id').}
+
+\item{pval_col}{Column name for p-values. Default is "pval".}
+
+\item{padj_col}{Column name for adjusted p-values. Default is "padj".}
+
+\item{log2fc_col}{Column name for log2 fold changes. Default is "log2fc".}
+
+\item{nperm}{Number of permutations for GSEA. Default is 1000.}
+
+\item{seed}{Random seed for reproducibility. Default is NULL.}
+
+\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
 }
 \value{
-A data frame containing the GSEA enrichment results, including:
+A data frame containing the GSEA enrichment results with columns:
 \itemize{
-  \item pathway – pathway name
-  \item pval – nominal p-value
-  \item padj – adjusted p-value (Benjamini–Hochberg)
-  \item ES – enrichment score
-  \item NES – normalized enrichment score
-  \item size – number of metabolites in the pathway
-  \item leadingEdge – subset of metabolites driving the enrichment
+  \item pathway - Pathway name
+  \item pval - Nominal p-value
+  \item padj - Adjusted p-value (FDR)
+  \item ES - Enrichment score
+  \item NES - Normalized enrichment score
+  \item nMoreExtreme - Number of permutations more extreme
+  \item size - Size of the pathway after filtering
+  \item leadingEdge - Metabolites driving the enrichment
+  \item input_count - Number of metabolites from input data in pathway
+  \item significance - Significance stars (*** p<0.001, ** p<0.01, * p<0.05, NS)
 }
 }
 \description{
-This function performs Gene Set Enrichment Analysis (GSEA) adapted for metabolomics data,
-testing whether predefined metabolite sets (pathways) are enriched among ranked metabolites.
-}
-\details{
-Metabolites are ranked by \code{log2fc} (descending), and enrichment is tested using
-the running-sum statistic from the \code{fgsea} algorithm. Only pathways with
-size between \code{minSize} and \code{maxSize} are tested.
+This function performs Gene Set Enrichment Analysis (GSEA) adapted for metabolomics data.
+It tests whether predefined metabolite sets (pathways) show statistically significant
+enrichment at the top or bottom of a ranked list of metabolites. Handles complex 
+metabolite IDs by extracting clean KEGG IDs for pathway matching.
 }
 \examples{
-# Generate example data for GSEA
-set.seed(1234)
-inputMetabolites <- paste0("M", 1:20)
-
-# Create pathway definitions
-pathway_names <- paste0("Pathway", 1:20)
-PathwayVsMetabolites <- data.frame(
-  Pathway = rep(pathway_names, each = 1),
-  Metabolites = sapply(1:20, function(x)
-    paste(sample(inputMetabolites, sample(5:10, 1)), collapse = ","))
-)
-
-# Generate example metabolite statistics for GSEA
+# Example 1: Basic GSEA with simulated data
+set.seed(123)
 example_data <- data.frame(
-  met_id = inputMetabolites,
-  pval = runif(20, 0.001, 0.05),
-  log2fc = rnorm(20, mean = 0, sd = 1)
+  kegg_id = paste0("C", sprintf("\%05d", 1:100)),
+  log2fc = rnorm(100, mean = 0, sd = 1),
+  pval = runif(100, 0.001, 0.1)
 )
 
-# Perform GSEA analysis
+# Create pathway data
+PathwayVsMetabolites <- data.frame(
+  Pathway = c("Pathway_A", "Pathway_B", "Pathway_C"),
+  Metabolites = c("C00001,C00002,C00003,C00004,C00005,C00006,C00007",
+                  "C00008,C00009,C00010,C00011,C00012,C00013,C00014", 
+                  "C00015,C00016,C00017,C00018,C00019,C00020,C00021")
+)
+
+# Run GSEA
 gsea_results <- perform_gsea_analysis(example_data, PathwayVsMetabolites)
-
-# Show top results
-head(gsea_results, 5)
-
-# Expected output structure:
-#   pathway        pval       padj   log2err        ES      NES size
-# 1 Pathway5  0.00123456 0.01234567 0.1234567 0.8765432 2.345678    8
-# 2 Pathway12 0.01234567 0.04567891 0.2345678 0.7654321 1.987654    6
-# 3 Pathway8  0.03456789 0.07890123 0.3456789 0.6543210 1.543210    7
-
-# Show top enriched pathway details
-if (nrow(gsea_results) > 0) {
-  top_pathway <- gsea_results[1, ]
-  cat("Top enriched pathway:", top_pathway$pathway, "\n")
-  cat("Normalized Enrichment Score (NES):", round(top_pathway$NES, 3), "\n")
-  cat("P-value:", format.pval(top_pathway$pval, digits = 3), "\n")
-  cat("Adjusted P-value:", format.pval(top_pathway$padj, digits = 3), "\n")
-  cat("Pathway size:", top_pathway$size, "metabolites\n")
-}
+head(gsea_results)
 
 }

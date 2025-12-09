@@ -4,29 +4,89 @@
 \alias{prepare_gmt_data}
 \title{Prepare GMT Data for Pathway Analysis}
 \usage{
-prepare_gmt_data(PathwayVsMetabolites, metabolites_in_data = NULL)
+prepare_gmt_data(
+  PathwayVsMetabolites,
+  metabolites_in_data = NULL,
+  min_pathway_size = 5
+)
 }
 \arguments{
 \item{PathwayVsMetabolites}{A data frame containing pathways and their associated 
 metabolites. Must include columns 'Pathway' and 'Metabolites'.}
 
 \item{metabolites_in_data}{Optional character vector of metabolite IDs to filter pathways.}
+
+\item{min_pathway_size}{Minimum number of metabolites required in a pathway (default = 5).}
 }
 \value{
 A list of pathways with their associated metabolites in GMT format.
 }
 \description{
 Converts pathway-metabolite data to GMT format required for GSEA analysis.
+Handles various metabolite ID formats and provides detailed filtering information.
 }
 \examples{
-# Create example pathway data
+# Example 1: Basic usage with KEGG metabolites
 PathwayVsMetabolites <- data.frame(
-  Pathway = c("Pathway1", "Pathway2"),
-  Metabolites = c("M1,M2,M3", "M2,M4,M5")
+  Pathway = c("Glycolysis", "TCA Cycle", "Pentose Phosphate"),
+  Metabolites = c(
+    "C00031,C00022,C00036,C00103,C00111,C00118,C00186,C00197,C00221,C00236",
+    "C00024,C00026,C00042,C00122,C00149,C00158,C00311,C00417,C05125",
+    "C00117,C00118,C00121,C00231,C00279,C00345,C00620,C01151,C01236"
+  )
 )
 
-# Convert to GMT format
 gmt_data <- prepare_gmt_data(PathwayVsMetabolites)
 str(gmt_data)
-# See ?enrichmet for complete examples
+
+# Example 2: Filtering with specific KEGG IDs
+my_metabolites <- c(
+  "C00031", "C00022", "C00036", "C00103", "C00024", "C00026"
+)
+filtered_gmt <- prepare_gmt_data(PathwayVsMetabolites, my_metabolites)
+str(filtered_gmt)
+
+# Example 3: Complex IDs with multiple separators
+complex_pathways <- data.frame(
+  Pathway = c("PathwayA", "PathwayB"),
+  Metabolites = c(
+    "C00031|C00022,C00036; C00103", 
+    "C00024|C00026; C00042,C00149"
+  )
+)
+complex_gmt <- prepare_gmt_data(complex_pathways)
+str(complex_gmt)
+
+# Example 4: Realistic human metabolic pathways
+human_pathways <- data.frame(
+  Pathway = c(
+    "Glycolysis / Gluconeogenesis", 
+    "Citrate cycle (TCA cycle)",
+    "Pentose phosphate pathway",
+    "Fatty acid metabolism"
+  ),
+  Metabolites = c(
+    paste0(
+      "C00031,C00022,C00036,C00103,C00111,C00118,C00186,C00197,",
+      "C00221,C00236,C00267,C00354,C00631,C00668,C01172"
+    ),
+    "C00024,C00026,C00036,C00042,C00122,C00149,C00158,C00311,C00417,C05125",
+    paste0(
+      "C00117,C00118,C00121,C00231,C00279,C00345,C00620,C01151,",
+      "C01236,C01801,C05378,C05382"
+    ),
+    "C00083,C00162,C00233,C00487,C00558,C01205,C02571,C05263,C06104,C16255"
+  )
+)
+human_gmt <- prepare_gmt_data(human_pathways)
+str(human_gmt)
+
+# Example 5: Adjusting minimum pathway size
+# For smaller datasets, you might want to reduce the minimum size
+small_gmt <- prepare_gmt_data(
+  PathwayVsMetabolites, 
+  min_pathway_size = 3
+)
+str(small_gmt)
+
 }

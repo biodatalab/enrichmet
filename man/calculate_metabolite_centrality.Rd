@@ -14,17 +14,22 @@ metabolites. Must include columns 'Pathway' and 'Metabolites'.}
 A data frame with metabolite names and their relative betweenness centrality scores.
 }
 \description{
-Computes relative betweenness centrality for metabolites in pathway networks.
+Computes relative betweenness centrality for metabolites based on their 
+co-membership in metabolic pathways.
 }
 \examples{
-# Create example pathway data
+# Create example pathway data with valid KEGG metabolite IDs
 PathwayVsMetabolites <- data.frame(
-  Pathway = c("Pathway1", "Pathway2"),
-  Metabolites = c("M1,M2,M3", "M2,M4,M5")
+  Pathway = c("Glycolysis / Gluconeogenesis",
+              "Citrate cycle (TCA cycle)",
+              "Pentose phosphate pathway"),
+  Metabolites = c("C00031,C00022,C00197,C00221,C00631,C01172",
+                  "C00022,C00036,C00024,C00158,C00149,C00311",
+                  "C00117,C00257,C00121,C00085,C00118")
 )
 
 # Calculate centrality
 centrality <- calculate_metabolite_centrality(PathwayVsMetabolites)
 head(centrality)
-# See ?enrichmet for complete examples
+
 }

@@ -3,7 +3,6 @@
 #'
 #' Generates a visualization of pathway enrichment results.
 #'
-#' @param significant_results_df Data frame from perform_enrichment_analysis().
 #'
 #' @return A ggplot object showing pathway enrichment results.
 #'
@@ -51,12 +50,22 @@ create_enrichment_plot <- function(enrichment_results) {
         stop("No enrichment results provided for plotting.")
     }
     
-    # Ensure Count is numeric
+    # Ensure Count is numeric and round to integers
     enrichment_results$Count <- as.numeric(enrichment_results$Count)
+    enrichment_results$Count <- round(enrichment_results$Count)
     
-    # Detect min and max automatically
-    min_count <- min(enrichment_results$Count, na.rm = TRUE)
-    max_count <- max(enrichment_results$Count, na.rm = TRUE)
+    # Get the actual unique count values present in the data
+    unique_counts <- sort(unique(enrichment_results$Count))
+    
+    # Use the actual count values for breaks
+    count_breaks <- unique_counts
+    
+    # If there are too many unique counts, select a representative subset
+    if (length(count_breaks) > 6) {
+        # Select evenly spaced values from the unique counts
+        idx <- round(seq(1, length(unique_counts), length.out = 6))
+        count_breaks <- unique_counts[idx]
+    }
     
     # Plot
     p <- ggplot2::ggplot(
@@ -71,7 +80,7 @@ create_enrichment_plot <- function(enrichment_results) {
         ggplot2::geom_point(alpha = 0.8) +
         ggplot2::scale_size_continuous(
             range = c(3, 12),
-            breaks = pretty(c(min_count, max_count), n = 4),
+            breaks = count_breaks,
             name = "Count"
         ) +
         ggplot2::scale_color_gradient(
@@ -92,7 +101,7 @@ create_enrichment_plot <- function(enrichment_results) {
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
             legend.position = "right",
             panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
-        )+
+        ) +
         ggplot2::coord_flip()
     
     return(p)

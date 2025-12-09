@@ -18,14 +18,14 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-**enrichmet** streamlines pathway enrichment analysis by enabling the entire workflow through a single R function call. This approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results.
+**enrichmet** simplifies pathway enrichment analysis by allowing the complete workflow to be executed through a single R function call. This design eliminates repetitive steps such as data reformatting and parameter configuration, improving efficiency, reducing the risk of errors, and supporting reproducible analysis. For users who wish to run only a specific analysis or generate selected plots rather than executing the full workflow, enrichmet also provides dedicated modules for each individual analysis and visualization.
 
-**enrichmet** performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites, and performs Metabolite Set Enrichment Analysis (MetSEA). The **enrichmet**() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects):
+**enrichmet performs pathway enrichment analysis using Fisher’s exact test, computes betweenness centrality for metabolites, and performs Metabolite Set Enrichment Analysis (MetSEA). The **enrichmet**() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects):
 
 - **Pathway enrichment plot**
 - **Pathway impact plot**
-- **MetSEA plot**
-- **RBC plot**
+- **Metabolite Set Enrichment Analysis (MetSEA plot)**
+- **Relative Betweenness Centrality (RBC) plot**
 - **Network graph**
 - **Pathway heatmap**
 - **Pathway membership plot**
@@ -36,12 +36,6 @@ knitr::opts_chunk$set(
 You can install enrichmet as:
 
 ``` r
-install.packages("remotes")
-remotes::install_git("https://github.com/biodatalab/enrichmet.git")
-or 
-install.packages("devtools")
-devtools::install_git("https://github.com/biodatalab/enrichmet.git")
-or
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("enrichmet")
@@ -63,85 +57,111 @@ knitr::opts_chunk$set(
 This is a basic example 
 
 ```{r example}
+## ** Example showing ALL 8 plots
+# Load required libraries
 library(enrichmet)
 library(dplyr)
 library(stringr)
+library(tidyr)
 
-## basic example code
-## ** Examples
-
-# Generate example data with at least n=50 metabolites
+## Generate example data with proper KEGG IDs
 set.seed(1234)
 
-# Create 20 unique metabolites
-inputMetabolites <- paste0("M", 1:20)
+# Create 20 unique metabolites WITH KEGG IDs
+inputMetabolites <- paste0("C", sprintf("%05d", 1:20))
 
 # ---- 1. Generate 50 pathways with random metabolites assigned ----
 pathway_names <- paste0("Pathway", 1:50)
 PathwayVsMetabolites <- data.frame(
-  Pathway = rep(pathway_names, each = 1),
-  Metabolites = sapply(1:50, function(x) paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
+    Pathway = rep(pathway_names, each = 1),
+    Metabolites = sapply(1:50, function(x) paste(sample(inputMetabolites, sample(5:15, 1)), collapse = ","))
 )
 
 # ---- 2. Add new pathway entries ----
 new_rows <- data.frame(
-  Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "Pathway105"),
-  Metabolites = c(
-    "M12,M13,M14,M15,M16,M1,M18,M3,M6,M16,M4",
-    "M6,M7,M8,M9,M10,M11,M9,M6,M16,M4",
-    "M24,M25,M26,M27,M28,M29,M30,M26,M5",
-    "M13,M14,M15,M16,M17,M24,M27,M14",
-    "M15,M16,M17,M18,M19,M20,M21,M4,M8,M10"
-  )
+    Pathway = c("Pathway101", "Pathway102", "Pathway103", "Pathway104", "Pathway105"),
+    Metabolites = c(
+        "C00012,C00013,C00014,C00015,C00016,C00001,C00018,C00003,C00006,C00004",
+        "C00006,C00007,C00008,C00009,C00010,C00011,C00009,C00006,C00016,C00004",
+        "C00024,C00025,C00026,C00027,C00028,C00029,C00030,C00026,C00005",
+        "C00013,C00014,C00015,C00016,C00017,C00024,C00027,C00014",
+        "C00015,C00016,C00017,C00018,C00019,C00020,C00021,C00004,C00008,C00010"
+    )
 )
 
 # Combine with existing PathwayVsMetabolites
 PathwayVsMetabolites <- rbind(PathwayVsMetabolites, new_rows)
 
-# ---- 3. Generate example metabolite-level data ----
+# ---- 3. Generate example metabolite-level data (with KEGG IDs) ----
 example_data <- data.frame(
-  met_id = inputMetabolites,
-  pval = runif(20, 0.001, 0.05),  # Random p-values between 0.001 and 0.05
-  log2fc = rnorm(20, mean = 0, sd = 1)  # Log2 fold changes from normal distribution
+    met_id = c(inputMetabolites, "C00021", "C00022", "C00023"),  # Add extra metabolites
+    pval = c(runif(20, 0.001, 0.05), 0.0001, 0.0002, 0.0003),
+    log2fc = c(rnorm(20, mean = 0, sd = 1), 2.5, 2.3, -2.1),
+    mz = rnorm(23, mean = 200, sd = 50),
+    rt = rnorm(23, mean = 10, sd = 3)
 )
 
-# ---- 4. Create mapping_df ----
+# ---- 4. Create KEGG lookup table (ESSENTIAL) ----
+kegg_lookup <- data.frame(
+    kegg_id = c(inputMetabolites, "C00021", "C00022", "C00023"),
+    name = c(
+        "Glucose", "Lactate", "Pyruvate", "Alanine", "Valine",
+        "Leucine", "Isoleucine", "Proline", "Serine", "Threonine",
+        "Cysteine", "Methionine", "Aspartate", "Glutamate", "Asparagine",
+        "Glutamine", "Lysine", "Arginine", "Histidine", "Phenylalanine",
+        "Tyrosine", "Tryptophan", "Creatine"
+    )
+)
+
+# ---- 5. Create mapping_df with additional IDs ----
 set.seed(42)
 mapping_df <- data.frame(
-  KEGG_ID = inputMetabolites,
-  PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
-  STITCH_ID = paste0("CIDs", stringr::str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0"))
+    KEGG_ID = inputMetabolites,
+    HMDB_ID = paste0("HMDB", stringr::str_pad(sample(10000:99999, length(inputMetabolites)), 6, pad = "0")),
+    PubChem_CID = as.character(sample(10000:99999, length(inputMetabolites))),
+    CHEBI_ID = paste0("CHEBI:", sample(10000:99999, length(inputMetabolites))),
+    STITCH_ID = paste0("CIDs", stringr::str_pad(sample(1000:9999, length(inputMetabolites)), 8, pad = "0")),
+    Compound_Name = paste("Compound", sample(LETTERS, length(inputMetabolites), replace = TRUE), 
+                          sample(100:999, length(inputMetabolites), replace = TRUE))
 )
 
-# ---- 5. Create synthetic STITCH interaction data ----
+# ---- 6. Create synthetic STITCH interaction data ----
 stitch_ids <- mapping_df$STITCH_ID
 
 stitch_pairs <- expand.grid(chemical1 = stitch_ids, chemical2 = stitch_ids) %>%
-  dplyr::filter(chemical1 != chemical2)
+    dplyr::filter(chemical1 != chemical2)
 
 set.seed(123)
 stitch_df <- stitch_pairs %>%
-  dplyr::slice_sample(n = 200) %>%
-  dplyr::mutate(
-    similarity = runif(dplyr::n(), 0, 1),
-    experimental = sample(0:500, dplyr::n(), replace = TRUE),
-    database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
-    textmining = sample(0:1000, dplyr::n(), replace = TRUE),
-    combined_score = similarity * 200 + experimental + database + textmining
-  )
+    dplyr::slice_sample(n = 50) %>%  # Reduced to 50 for faster processing
+    dplyr::mutate(
+        similarity = runif(dplyr::n(), 0.6, 0.95),  # Higher similarity for better networks
+        experimental = sample(200:800, dplyr::n(), replace = TRUE),
+        database = sample(c(0, 300, 600, 900), dplyr::n(), replace = TRUE),
+        textmining = sample(0:900, dplyr::n(), replace = TRUE),
+        combined_score = similarity * 200 + experimental + database + textmining
+    )
 
-# ---- 6. Run enrichment analysis ----
+# ---- 7. Run comprehensive enrichment analysis with ALL features ----
 results <- enrichmet(
-  inputMetabolites = inputMetabolites,
-  PathwayVsMetabolites = PathwayVsMetabolites, 
-  example_data = example_data,
-  top_n = 10,
-  mapping_df = mapping_df,
-  stitch_df = stitch_df
+    inputMetabolites = inputMetabolites,
+    PathwayVsMetabolites = PathwayVsMetabolites,
+    example_data = example_data,
+    kegg_lookup = kegg_lookup,
+    top_n = 15,
+    p_value_cutoff = 0.1,  # Use a reasonable cutoff
+    mapping_df = mapping_df,
+    stitch_df = stitch_df,
+    analysis_type = c("enrichment", "gsea", "centrality", "network",
+                      "heatmap", "membership", "interaction"),
+    network_top_n = 10,
+    heatmap_top_n = 10,
+    membership_top_n = 10,
+    min_pathway_occurrence = 2,
+    min_metabolite_occurrence = 2
 )
+results
 
-# Display the results
-print(results)
 
 ```
 

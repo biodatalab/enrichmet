@@ -9,9 +9,10 @@ create_heatmap_plot(
   PathwayVsMetabolites,
   inputMetabolites,
   kegg_lookup = NULL,
-  min_pathways = 1,
+  min_pathways = 2,
   min_metabolites = 1,
-  base_font_size = 14
+  base_font_size = 12,
+  top_n = NULL
 )
 }
 \arguments{
@@ -22,14 +23,28 @@ create_heatmap_plot(
 \item{inputMetabolites}{A character vector of metabolite IDs.}
 
 \item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
+
+\item{min_pathways}{Minimum number of metabolites a pathway must have to be included.}
+
+\item{min_metabolites}{Minimum number of pathways a metabolite must be in to be included.}
+
+\item{base_font_size}{Base font size for the heatmap labels.}
+
+\item{top_n}{Number of top metabolites to include (by significance).}
 }
 \value{
+A ComplexHeatmap object showing enrichment significance.
+
 A ComplexHeatmap object showing enrichment significance.
 }
 \description{
 Generates a heatmap showing metabolite-pathway enrichment significance.
 }
 \examples{
+# Create Enrichment Heatmap
+
+# Generates a heatmap showing metabolite-pathway enrichment significance.
+
 # Create comprehensive example data
 set.seed(123)
 enrichment_results <- data.frame(
@@ -58,19 +73,20 @@ PathwayVsMetabolites <- data.frame(
                   "C00021,C00073,C00094,C00155,C00283,C00542,C00957")
 )
 
-inputMetabolites <- c("C00031", "C00022", "C00074", "C00036", "C00103", "C00197", 
-                     "C00186", "C00221", "C00024", "C00042", "C00122", "C00149", 
+inputMetabolites <- c("C00031", "C00022", "C00074", "C00036", "C00103", "C00197",
+                     "C00186", "C00221", "C00024", "C00042", "C00122", "C00149",
                      "C00158", "C00117", "C00231", "C00279", "C00037", "C00048")
 
 kegg_lookup <- data.frame(
-  kegg_id = c("C00031", "C00022", "C00074", "C00036", "C00103", "C00197", 
-              "C00186", "C00221", "C00024", "C00042", "C00122", "C00149", 
+  kegg_id = c("C00031", "C00022", "C00074", "C00036", "C00103", "C00197",
+              "C00186", "C00221", "C00024", "C00042", "C00122", "C00149",
               "C00158", "C00117", "C00231", "C00279", "C00037", "C00048",
               "C00417", "C05379", "C00345", "C01172", "C01236", "C00065",
               "C00143", "C00258", "C00021", "C00073", "C00094"),
-  name = c("D-Glucose", "L-Lactate", "Oxaloacetate", "Citrate", "D-Fructose 6-phosphate",
-           "3-Phospho-D-glyceroyl phosphate", "L-Aspartate", "Oxoglutaric acid",
-           "Acetyl-CoA", "Oxaloacetic acid", "L-Glutamate", "Succinyl-CoA",
+  name = c("D-Glucose", "L-Lactate", "Oxaloacetate", "Citrate",
+           "D-Fructose 6-phosphate", "3-Phospho-D-glyceroyl phosphate",
+           "L-Aspartate", "Oxoglutaric acid", "Acetyl-CoA",
+           "Oxaloacetic acid", "L-Glutamate", "Succinyl-CoA",
            "L-Malate", "D-Ribose 5-phosphate", "D-Xylulose 5-phosphate",
            "Sedoheptulose 7-phosphate", "Glycine", "L-Serine",
            "Succinate", "Isocitrate", "Glyceraldehyde 3-phosphate",
@@ -79,12 +95,21 @@ kegg_lookup <- data.frame(
            "L-Cystathionine", "L-Homocysteine", "S-Adenosyl-L-methionine")
 )
 
-# Create enrichment heatmap
-heatmap_plot <- create_heatmap_plot(enrichment_results, PathwayVsMetabolites, 
-                                   inputMetabolites, kegg_lookup)
+# Create enrichment heatmap with all parameters
+heatmap_plot <- create_heatmap_plot(
+  enrichment_results = enrichment_results,
+  PathwayVsMetabolites = PathwayVsMetabolites,
+  inputMetabolites = inputMetabolites,
+  kegg_lookup = kegg_lookup,
+  top_n = 10,
+  min_pathways = 1,
+  min_metabolites = 1
+)
+
 # Note: ComplexHeatmap objects need to be drawn explicitly
 if (!is.null(heatmap_plot)) {
   ComplexHeatmap::draw(heatmap_plot)
 }
+
 
 }

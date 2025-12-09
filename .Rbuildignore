@@ -6,3 +6,4 @@
 ^~\$.*\.xlsx$
 ^.*\.tar\.gz$
 ^output\.gmt$
+^README\.Rmd$

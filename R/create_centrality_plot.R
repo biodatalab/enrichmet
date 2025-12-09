@@ -64,7 +64,12 @@ create_centrality_plot <- function(centrality_results, top_n = 20, kegg_lookup =
         top_central,
         aes(x = reorder(Display_Name, RBC_Metabolite), y = RBC_Metabolite)
     ) +
-        ggplot2::geom_col(fill = "#2E86AB", alpha = 0.85) +
+        ggplot2::geom_col(aes(fill = RBC_Metabolite), alpha = 0.85) +
+        ggplot2::scale_fill_gradient(
+            name = "Centrality Score",
+            low = "#FFD180",      # Light blue
+            high = "#FF5722"      # Dark blue
+        ) +
         ggplot2::labs(
             title = paste("Top", top_n, "Metabolites by Relative Betweenness Centrality"),
             subtitle = "Measures connectivity importance in metabolic network",
@@ -77,7 +82,12 @@ create_centrality_plot <- function(centrality_results, top_n = 20, kegg_lookup =
             axis.text.x = element_text(size = 12, color = "black"),
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
             plot.subtitle = element_text(hjust = 0.5, size = 11), 
-            panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
+            panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+            legend.position = "bottom",
+            legend.title = element_text(face = "bold", size = 10),
+            legend.text = element_text(size = 9),
+            legend.key.width = unit(1.5, "cm"),
+            legend.key.height = unit(0.4, "cm")
         ) +
         ggplot2::coord_flip() +
         ggplot2::scale_y_continuous(expand = c(0, 0), limits = c(y_min, y_max))

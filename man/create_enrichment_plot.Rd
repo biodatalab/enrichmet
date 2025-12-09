@@ -8,8 +8,6 @@ create_enrichment_plot(enrichment_results)
 }
 \arguments{
 \item{enrichment_results}{Data frame with enrichment analysis results.}
-
-\item{significant_results_df}{Data frame from perform_enrichment_analysis().}
 }
 \value{
 A ggplot object showing pathway enrichment results.

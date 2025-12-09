@@ -4,6 +4,7 @@
 #'
 #' @param gsea_results Data frame from perform_gsea_analysis().
 #' @param top_n Number of top pathways to display (default = 20).
+#' @param kegg_lookup Optional data frame for mapping pathway IDs to names.
 #'
 #' @return A ggplot object showing GSEA results.
 #'
@@ -37,22 +38,100 @@
 #' plot
 #'
 #' @importFrom ggplot2 ggplot aes geom_point scale_color_gradient2 
-#' @importFrom ggplot2 labs theme_minimal theme element_text
+#' @importFrom ggplot2 labs theme_minimal theme element_text scale_size_continuous
+#' @importFrom dplyr arrange left_join
 #' @importFrom utils head
 #' @export
-create_gsea_plot <- function(gsea_results, top_n = 20) {
+create_gsea_plot <- function(gsea_results, top_n = 20, kegg_lookup = NULL) {
     if (nrow(gsea_results) == 0) {
         warning("No GSEA results to plot")
         return(NULL)
     }
     
-    # Sort and prepare data
+    # Handle both old and new column names for compatibility
+    # New GSEA output uses 'pval', old example used 'pval'
+    if (!"pval" %in% colnames(gsea_results) && "pval" %in% colnames(gsea_results)) {
+        gsea_results$pval <- gsea_results$pval
+    }
+    
+    # Ensure required columns exist
+    required_cols <- c("pathway", "pval", "NES")
+    missing_cols <- setdiff(required_cols, colnames(gsea_results))
+    if (length(missing_cols) > 0) {
+        stop("Missing required columns in GSEA results: ", paste(missing_cols, collapse = ", "))
+    }
+    
+    # Handle input_count column - use leadingEdge count if input_count doesn't exist
+    if (!"input_count" %in% colnames(gsea_results)) {
+        if ("leadingEdge" %in% colnames(gsea_results)) {
+            gsea_results$input_count <- vapply(
+                gsea_results$leadingEdge, 
+                length, 
+                FUN.VALUE = integer(1)
+            )
+        } else {
+            # If neither exists, create a dummy column with value 1
+            gsea_results$input_count <- 1
+            warning("No 'input_count' or 'leadingEdge' column found. Using default size of 1 for all points.")
+        }
+    }
+    
+    # Apply KEGG lookup if provided - FIXED COLUMN NAMES
+    if (!is.null(kegg_lookup)) {
+        # Try different possible column name combinations
+        if (all(c("pathway_id", "pathway_name") %in% colnames(kegg_lookup))) {
+            # Map pathway IDs to human-readable names
+            gsea_results <- gsea_results %>%
+                dplyr::left_join(kegg_lookup, by = c("pathway" = "pathway_id")) %>%
+                dplyr::mutate(
+                    pathway = ifelse(!is.na(pathway_name), pathway_name, pathway)
+                )
+            message("Applied KEGG pathway name mapping using 'pathway_id' and 'pathway_name' columns")
+        } else if (all(c("kegg_id", "name") %in% colnames(kegg_lookup))) {
+            # Alternative column names that match your other functions
+            gsea_results <- gsea_results %>%
+                dplyr::left_join(kegg_lookup, by = c("pathway" = "kegg_id")) %>%
+                dplyr::mutate(
+                    pathway = ifelse(!is.na(name), name, pathway)
+                )
+            message("Applied KEGG pathway name mapping using 'kegg_id' and 'name' columns")
+        } else if ("pathway" %in% colnames(kegg_lookup) && "name" %in% colnames(kegg_lookup)) {
+            # Another possible column name combination
+            gsea_results <- gsea_results %>%
+                dplyr::left_join(kegg_lookup, by = "pathway") %>%
+                dplyr::mutate(
+                    pathway = ifelse(!is.na(name), name, pathway)
+                )
+            message("Applied KEGG pathway name mapping using 'pathway' and 'name' columns")
+        } else {
+            warning("kegg_lookup provided but missing required columns. Expected one of:\n",
+                    "  - 'pathway_id' and 'pathway_name'\n", 
+                    "  - 'kegg_id' and 'name'\n",
+                    "  - 'pathway' and 'name'\n",
+                    "Available columns in kegg_lookup: ", paste(colnames(kegg_lookup), collapse = ", "))
+            
+            # Debug information
+            message("First few pathway names in GSEA results: ", paste(head(gsea_results$pathway), collapse = ", "))
+            if (nrow(kegg_lookup) > 0) {
+                message("First few entries in kegg_lookup: ", paste(head(kegg_lookup[,1]), collapse = ", "))
+            }
+        }
+    }
+    
+    # Sort and prepare data - maintaining original format
     MSEAres <- gsea_results %>%
         dplyr::arrange(pval) %>%
-        head(top_n)
+        utils::head(top_n)
+    
+    # Check if we have any results after filtering
+    if (nrow(MSEAres) == 0) {
+        warning("No pathways to plot after filtering to top_n = ", top_n)
+        return(NULL)
+    }
     
     MSEAres$pathway <- factor(MSEAres$pathway, levels = rev(MSEAres$pathway))
     
+    # Create the exact same plot as original
     ggplot2::ggplot(MSEAres,
                     ggplot2::aes(
                         x = -log10(pval),
@@ -82,6 +161,7 @@ create_gsea_plot <- function(gsea_results, top_n = 20) {
             axis.text.y = element_text(size = 12, color = "black"),
             axis.text.x = element_text(size = 12, color = "black"),
             plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
-            legend.position = "right",   panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
+            legend.position = "right",   
+            panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8)
         )
 }

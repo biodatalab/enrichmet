@@ -5,7 +5,12 @@
 #' @param inputMetabolites A character vector of metabolite IDs.
 #' @param PathwayVsMetabolites A data frame with pathway-metabolite associations.
 #' @param kegg_lookup Optional data frame for KEGG ID to name mapping.
-#'
+#' @param top_n Integer specifying the number of top metabolites to display, 
+#'   selected based on their relative betweenness centrality (RBC) scores. 
+#'   If `NULL` (default), all metabolites are included.
+#' @param font_family Font family for text elements. Defaults to "sans" for 
+#'   system compatibility. Avoid specialized fonts that may not be available 
+#'   on all systems.
 #' @return A ggraph object showing the metabolite-pathway network.
 #'
 #' @examples
@@ -42,14 +47,32 @@
 #'
 #' @importFrom dplyr filter select mutate
 #' @importFrom tidyr unnest
-#' @importFrom igraph graph_from_data_frame betweenness degree vcount ecount
-#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text theme_graph
+#' @importFrom igraph graph_from_data_frame betweenness degree vcount ecount V
+#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text
+#' @importFrom ggplot2 scale_color_manual scale_size_continuous labs theme element_text
 #' @export
-create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_lookup = NULL) {
+create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_lookup = NULL, top_n = 20, font_family = "sans") {
+    
+    # Limit to top N metabolites if specified
+    if (!is.null(top_n) && top_n < length(inputMetabolites)) {
+        # If we have centrality data, use it to select top metabolites
+        all_centrality <- calculate_metabolite_centrality(PathwayVsMetabolites)
+        top_metabolites <- all_centrality %>%
+            dplyr::filter(Metabolite %in% inputMetabolites) %>%
+            dplyr::arrange(desc(RBC_Metabolite)) %>%
+            head(top_n) %>%
+            dplyr::pull(Metabolite)
+        
+        message("Using top ", top_n, " metabolites by centrality for network plot")
+        selected_metabolites <- top_metabolites
+    } else {
+        selected_metabolites <- inputMetabolites
+    }
+    
     df <- PathwayVsMetabolites %>%
         dplyr::mutate(Metabolite = strsplit(Metabolites, ",")) %>%
         tidyr::unnest(Metabolite) %>%
-        dplyr::filter(Metabolite %in% inputMetabolites)
+        dplyr::filter(Metabolite %in% selected_metabolites)
     
     if (nrow(df) == 0) {
         warning("No matching metabolites found for network plot")
@@ -83,13 +106,14 @@ create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_loo
         igraph::V(g)$display_name <- igraph::V(g)$name
     }
     
-    # Create network plot
+    # Create network plot - CRITICAL FIX: Replace theme_graph() 
     network_plot <- ggraph::ggraph(g, layout = "fr") +
-        ggraph::geom_edge_link(alpha = 0.3, color = "grey70") +
+        ggraph::geom_edge_link(alpha = 0.3, color = "#606060") +
         ggraph::geom_node_point(aes(color = type, size = degree), alpha = 0.8) +
         ggraph::geom_node_text(
             aes(label = display_name),
             size = 3, repel = TRUE, max.overlaps = 50,
+            family = font_family,
             fontface = ifelse(igraph::V(g)$type == "Pathway", "bold", "plain")
         ) +
         ggplot2::scale_color_manual(
@@ -99,13 +123,30 @@ create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_loo
         ) +
         ggplot2::scale_size_continuous(name = "Connections", range = c(2, 8)) +
         ggplot2::labs(
-            title = "Metabolite-Pathway Network",
+            title = paste("Metabolite-Pathway Network (Top", top_n, "Metabolites)"),
             subtitle = paste("Showing", igraph::vcount(g), "nodes and", igraph::ecount(g), "connections")
         ) +
-        ggraph::theme_graph() +
+        # REPLACE ggraph::theme_graph() with ggplot2::theme_void() + customizations
+        ggplot2::theme_void() +
         ggplot2::theme(
-            plot.title = element_text(face = "bold", hjust = 0.5),
-            plot.subtitle = element_text(hjust = 0.5)
+            plot.title = ggplot2::element_text(
+                face = "bold", 
+                hjust = 0.5, 
+                family = font_family,
+                size = 14,
+                margin = ggplot2::margin(b = 10)
+            ),
+            plot.subtitle = ggplot2::element_text(
+                hjust = 0.5, 
+                family = font_family,
+                size = 11,
+                margin = ggplot2::margin(b = 15)
+            ),
+            legend.title = ggplot2::element_text(family = font_family, face = "bold"),
+            legend.text = ggplot2::element_text(family = font_family),
+            legend.position = "right",
+            legend.box.background = ggplot2::element_rect(fill = "white", color = NA),
+            legend.background = ggplot2::element_blank()
         )
     
     return(network_plot)

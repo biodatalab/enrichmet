@@ -31,15 +31,29 @@ A data frame of pathway enrichment results including p-values, impact scores,
 Uses Fisher's exact test to identify enriched pathways for a set of metabolites.
 }
 \examples{
-# Create example data
-inputMetabolites <- c("M1", "M2", "M3")
+# Create meaningful pathway data with real KEGG IDs
 PathwayVsMetabolites <- data.frame(
-  Pathway = c("Pathway1", "Pathway2"),
-  Metabolites = c("M1,M2,M3", "M2,M4,M5")
+  Pathway = c("Glycolysis / Gluconeogenesis",
+              "Citrate cycle (TCA cycle)",
+              "Pentose phosphate pathway",
+              "Amino sugar and nucleotide sugar metabolism",
+              "Pyruvate metabolism"),
+  Metabolites = c("C00031,C00022,C00197,C00221,C00631,C01172",
+                  "C00022,C00036,C00024,C00158,C00149,C00311",
+                  "C00117,C00257,C00121,C00085,C00118",
+                  "C00031,C00095,C00103,C00185",
+                  "C00022,C00024,C00036,C00158")
 )
 
+# Example: Input metabolites enriched in Glycolysis
+inputMetabolites <- c("C00031", "C00022", "C00197", "C00221", "C00631", "C01172")
+
 # Perform enrichment analysis
-results <- perform_enrichment_analysis(inputMetabolites, PathwayVsMetabolites)
+results <- perform_enrichment_analysis(
+  inputMetabolites = inputMetabolites,
+  PathwayVsMetabolites = PathwayVsMetabolites,
+  p_value_cutoff = 0.05
+)
 head(results)
-# See ?enrichmet for complete examples
+
 }

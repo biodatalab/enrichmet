@@ -4,12 +4,14 @@
 \alias{create_gsea_plot}
 \title{Create GSEA Plot}
 \usage{
-create_gsea_plot(gsea_results, top_n = 20)
+create_gsea_plot(gsea_results, top_n = 20, kegg_lookup = NULL)
 }
 \arguments{
 \item{gsea_results}{Data frame from perform_gsea_analysis().}
 
 \item{top_n}{Number of top pathways to display (default = 20).}
+
+\item{kegg_lookup}{Optional data frame for mapping pathway IDs to names.}
 }
 \value{
 A ggplot object showing GSEA results.

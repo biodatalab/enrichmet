@@ -7,7 +7,10 @@
 create_membership_plot(
   PathwayVsMetabolites,
   inputMetabolites,
-  kegg_lookup = NULL
+  kegg_lookup = NULL,
+  top_n = NULL,
+  min_pathway_occurrence = 1,
+  min_metabolite_occurrence = 1
 )
 }
 \arguments{
@@ -16,6 +19,12 @@ create_membership_plot(
 \item{inputMetabolites}{A character vector of metabolite IDs.}
 
 \item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
+
+\item{top_n}{Number of top metabolites to display (by centrality).}
+
+\item{min_pathway_occurrence}{Minimum number of metabolites a pathway must have to be included.}
+
+\item{min_metabolite_occurrence}{Minimum number of pathways a metabolite must be in to be included.}
 }
 \value{
 A ComplexHeatmap object showing pathway membership.
@@ -65,7 +74,7 @@ kegg_lookup <- data.frame(
 )
 
 # Create membership plot
-plot <- create_membership_plot(PathwayVsMetabolites, inputMetabolites, kegg_lookup)
+plot <- create_membership_plot(PathwayVsMetabolites, inputMetabolites, kegg_lookup, top_n = 10)
 # Note: ComplexHeatmap objects need to be drawn explicitly
 if (!is.null(plot)) {
   ComplexHeatmap::draw(plot)

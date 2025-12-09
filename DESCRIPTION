@@ -1,7 +1,7 @@
 Package: enrichmet
 Type: Package
 Title: enrichmet: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.7
+Version: 0.99.8
 Authors@R: 
     c(
         person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
@@ -21,8 +21,11 @@ LazyData: false
 RoxygenNote: 7.3.3
 URL: https://github.com/biodatalab/enrichmet/issues
 BugReports: https://github.com/biodatalab/enrichmet
+SystemRequirements: chron
 Imports:
     dplyr,
+    openxlsx,
+    rlang,
     tidyr,
     igraph,
     ggplot2,
@@ -31,14 +34,14 @@ Imports:
     ggraph,
     ggrepel,
     ComplexHeatmap,
-    magrittr,
     circlize,
     scales,
     tibble,
-    readr,
-    qvalue
+    qvalue,
+    limma
 Suggests: 
     knitr,
+    readr,
     readxl,
     BiocFileCache,
     httr,

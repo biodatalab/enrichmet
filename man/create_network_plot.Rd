@@ -4,7 +4,13 @@
 \alias{create_network_plot}
 \title{Create Metabolite-Pathway Network}
 \usage{
-create_network_plot(inputMetabolites, PathwayVsMetabolites, kegg_lookup = NULL)
+create_network_plot(
+  inputMetabolites,
+  PathwayVsMetabolites,
+  kegg_lookup = NULL,
+  top_n = 20,
+  font_family = "sans"
+)
 }
 \arguments{
 \item{inputMetabolites}{A character vector of metabolite IDs.}
@@ -12,6 +18,14 @@ create_network_plot(inputMetabolites, PathwayVsMetabolites, kegg_lookup = NULL)
 \item{PathwayVsMetabolites}{A data frame with pathway-metabolite associations.}
 
 \item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
+
+\item{top_n}{Integer specifying the number of top metabolites to display, 
+selected based on their relative betweenness centrality (RBC) scores. 
+If `NULL` (default), all metabolites are included.}
+
+\item{font_family}{Font family for text elements. Defaults to "sans" for 
+system compatibility. Avoid specialized fonts that may not be available 
+on all systems.}
 }
 \value{
 A ggraph object showing the metabolite-pathway network.
