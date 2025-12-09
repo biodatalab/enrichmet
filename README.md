@@ -161,7 +161,7 @@ results <- enrichmet(
 #> Processing complex KEGG IDs (splitting by |)...
 #> Split 20 complex IDs into 20 unique KEGG IDs
 #> Running pathway enrichment analysis...
-#> Enrichment analysis completed: 55 pathways tested, 55 pathways passed filtering (p ≤ 1.000000)
+#> Enrichment analysis completed: 55 pathways tested, 55 pathways passed filtering (p <= 1.000000)
 #> Running GSEA analysis...
 #> Extracting KEGG IDs from 'met_id' column...
 #> Successfully extracted KEGG IDs for 23 metabolites
@@ -217,7 +217,6 @@ results <- enrichmet(
 #> Graph vertex attributes: name, display_name, KEGG_ID, PubChem_CID
 #> Sample vertex display_names: Glucose, Lactate, Pyruvate, Alanine, Valine, Leucine
 #> Using layout: gem (spacing score: 388.19)
-#> Layout created. Testing labels...
 results
 #> $input_metabolites_used
 #>  [1] "C00001" "C00002" "C00003" "C00004" "C00005" "C00006" "C00007" "C00008"
