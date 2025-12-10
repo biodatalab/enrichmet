@@ -41,9 +41,7 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("enrichmet")
 
-```
-
-```{r, Case study of KrasG12D mutation}
+```{r Case study of KrasG12D mutation}
 library(BiocFileCache)
 library(readxl)
 library(readr)

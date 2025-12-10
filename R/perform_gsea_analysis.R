@@ -340,7 +340,7 @@ perform_gsea_analysis <- function(example_data, PathwayVsMetabolites,
         return(MSEAres)
         
     }, error = function(e) {
-        warning("GSEA failed with error: ", e$message)  # Line 180 - FIXED
+        warning("GSEA failed: ", e$message)  
         return(data.frame())
     })
 }
