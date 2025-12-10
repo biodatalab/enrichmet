@@ -1,7 +1,7 @@
 Package: enrichmet
 Type: Package
 Title: enrichmet: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.8
+Version: 0.99.9
 Authors@R: 
     c(
         person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
@@ -48,5 +48,5 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-VignetteBuilder: knitr
+BuildVignettes: no
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
