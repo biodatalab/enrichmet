@@ -252,7 +252,7 @@ When using this workflow, the `inputMetabolites` argument in the enrichment func
 
 ```{r DE using metabolomics data}
 # Load metabolomics data
-metabolmics_url <- "https://zenodo.org/api/records/17795032/files/example_data.csv/content"
+metabolmics_url <- "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
 metabolmics_path <- get_cached_file(metabolmics_url)
 metabolmics_mat <- read.csv(metabolmics_path, row.names = 1, check.names = FALSE)
 head(metabolmics_mat)

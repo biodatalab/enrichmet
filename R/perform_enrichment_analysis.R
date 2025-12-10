@@ -272,11 +272,11 @@ perform_enrichment_analysis <- function(inputMetabolites,
         }, FUN.VALUE = character(1))
     }
     
-    message(sprintf("Enrichment analysis completed: %d pathways tested,",
-                          "%d pathways passed filtering (p <= %f)"),
+    # FIXED: Proper sprintf formatting with numeric values
+    message(sprintf("Enrichment analysis completed: %d pathways tested, %d pathways passed filtering (p <= %f)",
                     nrow(results_combined), 
                     nrow(results_topN), 
-                    p_value_cutoff)
+                    p_value_cutoff))
     
     return(results_topN)
 }
