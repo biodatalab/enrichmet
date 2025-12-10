@@ -7,5 +7,3 @@
 ^.*\.tar\.gz$
 ^output\.gmt$
 ^README\.Rmd$
-^.*\.Rmd$
-^vignettes/$

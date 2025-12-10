@@ -48,5 +48,5 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-BuildVignettes: no
+VignetteBuilder: knitr
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
