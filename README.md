@@ -181,13 +181,13 @@ print(head(
   ],
   5
 ))
-#>                             pathway         pval        padj       NES
-#>                              <char>        <num>       <num>     <num>
-#> 1: Protein digestion and absorption 0.0001239302 0.008303321 -2.033918
-#> 2:               Mineral absorption 0.0008590294 0.027873472 -1.912337
-#> 3:      Biosynthesis of amino acids 0.0012480659 0.027873472 -1.802141
-#> 4:      Aminoacyl-tRNA biosynthesis 0.0022928119 0.038404599 -1.877354
-#> 5:        Biosynthesis of cofactors 0.0176549820 0.236576759 -1.579244
+#>                             pathway         pval       padj       NES
+#>                              <char>        <num>      <num>     <num>
+#> 1: Protein digestion and absorption 0.0002700371 0.01275013 -2.005914
+#> 2:               Mineral absorption 0.0003806009 0.01275013 -1.884813
+#> 3:      Aminoacyl-tRNA biosynthesis 0.0008066297 0.01801473 -1.869135
+#> 4:      Biosynthesis of amino acids 0.0018510329 0.03100480 -1.782122
+#> 5:        Biosynthesis of cofactors 0.0191946858 0.19686761 -1.552706
 
 cat("\n=== TOP 5 CENTRAL METABOLITES ===\n")
 #> 
@@ -332,10 +332,16 @@ results_da <- enrichmet(
 ## Other pathway maps
 
 The same over-representation interface accepts any pathway–feature table
-in `Pathway` / `Metabolites` format, for example a lipid ontology map.
-Lipid ontology content is not shipped with the package; users may supply
-their own map or obtain ontology terms under the terms of the LION
-project or BioPortal.
+in `Pathway` / `Metabolites` format. Lipid ontology content is **not
+shipped with the package**. Instead, LION lipid ontology content is
+obtained at runtime through the BioPortal / LION programming interface
+when users call the corresponding package helper, such as
+`fetch_lion_lipid_ontology()`. Retrieved content is fetched on demand
+and cached locally (for example, using `BiocFileCache`) to avoid
+unnecessary repeated downloads.
+
+Users may also supply their own pathway–feature mapping when
+appropriate. The example below uses a minimal illustrative table only.
 
 ## Data sources
 

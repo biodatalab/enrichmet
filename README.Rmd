@@ -263,7 +263,17 @@ results_da <- enrichmet(
 
 ## Other pathway maps
 
-The same over-representation interface accepts any pathway–feature table in `Pathway` / `Metabolites` format, for example a lipid ontology map. Lipid ontology content is not shipped with the package; users may supply their own map or obtain ontology terms under the terms of the LION project or BioPortal.
+The same over-representation interface accepts any pathway–feature table in
+`Pathway` / `Metabolites` format. Lipid ontology content is **not shipped
+with the package**. Instead, LION lipid ontology content is obtained at
+runtime through the BioPortal / LION programming interface when users call
+the corresponding package helper, such as `fetch_lion_lipid_ontology()`.
+Retrieved content is fetched on demand and cached locally (for example,
+using `BiocFileCache`) to avoid unnecessary repeated downloads.
+
+Users may also supply their own pathway–feature mapping when appropriate.
+The example below uses a minimal illustrative table only.
+
 
 ## Data sources
 
