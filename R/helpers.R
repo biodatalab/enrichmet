@@ -1,4 +1,5 @@
 # R/helpers.R
+
 #' Load example datasets for enrichmet
 #'
 #' This function loads minimal example datasets for demonstrating
@@ -81,6 +82,62 @@ load_example_data <- function(dataset = c("pathway", "summary", "kegg", "mapping
         return(env[[obj_name]])
     }
 }
+
+
+#' Get a cached file path using BiocFileCache
+#'
+#' Downloads and caches a remote file if it is not already present.
+#' Designed to work reliably on clean Bioconductor build machines.
+#'
+#' @param url Character. Single URL to download/cache.
+#' @return Character. Local path to the cached file.
+#' @keywords internal
+get_cached_file <- function(url) {
+    
+    if (!is.character(url) || length(url) != 1 || is.na(url) || url == "") {
+        stop("url must be a single non-empty character string.", call. = FALSE)
+    }
+    
+    # Use a consistent, non-interactive cache
+    bfc <- BiocFileCache::BiocFileCache(ask = FALSE)
+    
+    # Look for existing entry
+    cached <- BiocFileCache::bfcquery(bfc, query = url, field = "rname")
+    
+    if (nrow(cached) > 0) {
+        rid <- cached$rid[1]
+        
+        # Verify the rid still exists in the cache
+        if (rid %in% BiocFileCache::bfcrid(bfc)) {
+            path <- tryCatch(
+                BiocFileCache::bfcrpath(bfc, rids = rid),
+                error = function(e) NULL
+            )
+            
+            if (!is.null(path) && length(path) > 0 && file.exists(path[1])) {
+                return(path[1])
+            }
+        }
+    }
+    
+    # Not found or invalid → download and add
+    rid <- BiocFileCache::bfcadd(
+        bfc,
+        rname = url,
+        fpath = url,
+        download = TRUE,
+        rtype = "web"
+    )
+    
+    path <- BiocFileCache::bfcrpath(bfc, rids = rid)
+    
+    if (length(path) == 0 || !file.exists(path[1])) {
+        stop("Failed to download and cache resource: ", url, call. = FALSE)
+    }
+    
+    path[1]
+}
+
 
 # Optional: Create a test function
 #' @keywords internal
