@@ -22,6 +22,7 @@
 #'   \item{summary_stats}{Summary statistics of the analysis}
 #'
 #' @examples
+#' 
 #' # Example showing clear differential expression patterns
 #' set.seed(123)
 #' 
@@ -58,6 +59,7 @@
 #' 
 #' # View summary statistics
 #' results$summary_stats
+#' 
 #' @importFrom limma lmFit eBayes topTable makeContrasts contrasts.fit
 #' @importFrom dplyr mutate select
 #' @importFrom ggplot2 ggplot aes geom_point geom_vline geom_hline theme_bw xlab ylab theme ggtitle

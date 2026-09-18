@@ -20,75 +20,52 @@
 #'
 #' @return Character path to the cached file.
 #'
-#' @examples
-#' \donttest{
-#' path <- get_cached_file(
-#'     "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content"
-#' )
-#' file.exists(path)
-#' }
-#'
 #' @export
 get_cached_file <- function(url) {
-    
-    if (!is.character(url) ||
-        length(url) != 1 ||
-        is.na(url) ||
-        url == "") {
-        
-        stop(
-            "url must be a single non-empty character string.",
-            call. = FALSE
-        )
+    if (!is.character(url) || length(url) != 1 ||
+        is.na(url) || url == "") {
+        stop("url must be a single non-empty character string.",
+             call. = FALSE)
     }
     
     bfc <- .enrichmet_bfc()
     
-    cached <- BiocFileCache::bfcquery(
-        bfc,
-        query = url,
-        field = "rname"
-    )
-    
+    # 1. Reuse an existing cache entry if it is still valid
+    cached <- BiocFileCache::bfcquery(bfc, query = url, field = "rname")
     if (nrow(cached) > 0) {
-        
-        path <- BiocFileCache::bfcrpath(
-            bfc,
-            rids = cached$rid[1]
+        path <- tryCatch(
+            BiocFileCache::bfcrpath(bfc, rids = cached$rid[1]),
+            error = function(e) NULL
         )
-        
-        if (length(path) > 0 &&
-            file.exists(path[1])) {
-            
+        if (length(path) > 0 && file.exists(path[1])) {
             return(path[1])
         }
     }
     
-    rid <- BiocFileCache::bfcadd(
-        bfc,
-        rname = url,
-        fpath = url,
-        download = TRUE
+    # 2. Download and add to the cache
+    rid <- tryCatch(
+        BiocFileCache::bfcadd(
+            bfc,
+            rname = url,
+            fpath = url,
+            download = TRUE,
+            rtype = "web"
+        ),
+        error = function(e) {
+            stop("Failed to download resource: ", url, "\n",
+                 conditionMessage(e), call. = FALSE)
+        }
     )
     
-    path <- BiocFileCache::bfcrpath(
-        bfc,
-        rids = rid
-    )
-    
-    if (length(path) == 0 ||
-        !file.exists(path[1])) {
-        
-        stop(
-            "Failed to download and cache resource: ",
-            url,
-            call. = FALSE
-        )
+    # 3. Retrieve the cached path
+    path <- BiocFileCache::bfcrpath(bfc, rids = rid)
+    if (length(path) == 0 || !file.exists(path[1])) {
+        stop("Failed to download and cache resource: ", url,
+             call. = FALSE)
     }
     
     path[1]
 }
-
 #' Fetch KEGG compound names
 #'
 #' Downloads the KEGG compound list and returns KEGG compound IDs
@@ -99,11 +76,10 @@ get_cached_file <- function(url) {
 #'
 #' @return A data frame with columns \code{kegg_id} and \code{name}.
 #'
-#' @examples
-#' \donttest{
+#' 
 #' kegg_lookup <- fetch_kegg_compound_lookup()
 #' head(kegg_lookup)
-#' }
+#' 
 #'
 #' @export
 fetch_kegg_compound_lookup <- function(
@@ -190,10 +166,10 @@ fetch_kegg_compound_lookup <- function(
 #'   and \code{Metabolites}.
 #'
 #' @examples
-#' \donttest{
+#' 
 #' PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
 #' head(PathwayVsMetabolites)
-#' }
+#' 
 #'
 #' @export
 fetch_kegg_pathway_metabolites <- function(
@@ -621,11 +597,11 @@ fetch_kegg_chebi <- function(
 #'   evidence, and species information.
 #'
 #' @examples
-#' \donttest{
+#' 
 #' reactome <- fetch_reactome_reactions(species = "Homo sapiens")
 #' head(reactome)
 #' nrow(reactome)
-#' }
+#' 
 #'
 #' @export
 fetch_reactome_reactions <- function(
@@ -731,13 +707,13 @@ fetch_reactome_reactions <- function(
 #' @return A data frame containing KEGG-to-ChEBI-to-Reactome mappings.
 #'
 #' @examples
-#' \donttest{
+#' 
 #' reactome_df <- fetch_kegg_reactome(
 #'     kegg_ids = c("C00022", "C00031"),
 #'     species = "Homo sapiens"
 #' )
 #' head(reactome_df)
-#' }
+#' 
 #'
 #' @export
 fetch_kegg_reactome <- function(
@@ -817,7 +793,7 @@ fetch_kegg_reactome <- function(
 #' )
 #' head(pathway_lipids)
 #'
-#' \donttest{
+#' 
 #' # Live download when a BioPortal key is available
 #' if (nzchar(Sys.getenv("BIOPORTAL_API_KEY"))) {
 #'     pathway_lipids <- fetch_lion_lipid_ontology()
@@ -828,7 +804,7 @@ fetch_kegg_reactome <- function(
 #'         "to run the live LION download example."
 #'     )
 #' }
-#' }
+#' 
 #'
 #' @export
 fetch_lion_lipid_ontology <- function(

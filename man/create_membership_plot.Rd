@@ -33,6 +33,7 @@ A ComplexHeatmap object showing pathway membership.
 Generates a heatmap showing pathway membership for metabolites.
 }
 \examples{
+
 # Create comprehensive example data with matching metabolite IDs
 inputMetabolites <- c("C00031", "C00022", "C00074", "C00036", "C00103", 
                      "C00197", "C00186", "C00221", "C00024", "C00042",
@@ -79,4 +80,5 @@ plot <- create_membership_plot(PathwayVsMetabolites, inputMetabolites, kegg_look
 if (!is.null(plot)) {
   ComplexHeatmap::draw(plot)
 }
+
 }

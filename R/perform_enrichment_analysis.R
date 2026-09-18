@@ -14,6 +14,7 @@
 #'         and coverage statistics.
 #'
 #' @examples
+#' 
 #' # Create meaningful pathway data with real KEGG IDs
 #' PathwayVsMetabolites <- data.frame(
 #'   Pathway = c("Glycolysis / Gluconeogenesis",
@@ -38,7 +39,7 @@
 #'   p_value_cutoff = 0.05
 #' )
 #' head(results)
-#'
+#' 
 #' @importFrom dplyr filter arrange mutate
 #' @importFrom tidyr unnest
 #' @importFrom stats fisher.test p.adjust

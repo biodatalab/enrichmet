@@ -26,8 +26,8 @@
 #' @return A ComplexHeatmap object showing enrichment significance.
 #'
 #' @examples
+#' 
 #' # Create comprehensive example data
-#' set.seed(123)
 #' enrichment_results <- data.frame(
 #'   Pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
 #'               "Pentose phosphate pathway", "Pyruvate metabolism",
@@ -91,7 +91,7 @@
 #' if (!is.null(heatmap_plot)) {
 #'   ComplexHeatmap::draw(heatmap_plot)
 #' }
-#'
+#' 
 #'
 #' @importFrom dplyr filter mutate
 #' @importFrom tidyr unnest

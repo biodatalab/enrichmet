@@ -31,7 +31,7 @@ pathway_lipids <- data.frame(
 )
 head(pathway_lipids)
 
-\donttest{
+
 # Live download when a BioPortal key is available
 if (nzchar(Sys.getenv("BIOPORTAL_API_KEY"))) {
     pathway_lipids <- fetch_lion_lipid_ontology()
@@ -42,6 +42,6 @@ if (nzchar(Sys.getenv("BIOPORTAL_API_KEY"))) {
         "to run the live LION download example."
     )
 }
-}
+
 
 }

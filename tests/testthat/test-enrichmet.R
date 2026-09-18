@@ -24,11 +24,16 @@ PathwayVsMetabolites <- fetch_kegg_pathway_metabolites()
 
 kegg_lookup <- fetch_kegg_compound_lookup()
 
-example_data <- read.csv(
-    "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content",
-    stringsAsFactors = FALSE
+example_path <- system.file(
+"extdata", "summary_stat.csv",
+package = "enrichmet"
 )
 
+if (example_path == "") {
+    stop("Example file 'summary_stat.csv' not found in inst/extdata/")
+}
+
+example_data <- read.csv(example_path, stringsAsFactors = FALSE)
 # Minimal Reactome test data.
 # Reactome interaction requires KEGG and Reaction columns.
 reactome_df <- data.frame(

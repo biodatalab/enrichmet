@@ -26,6 +26,7 @@ Converts pathway-metabolite data to GMT format required for GSEA analysis.
 Handles various metabolite ID formats and provides detailed filtering information.
 }
 \examples{
+
 # Example 1: Basic usage with KEGG metabolites
 PathwayVsMetabolites <- data.frame(
   Pathway = c("Glycolysis", "TCA Cycle", "Pentose Phosphate"),
@@ -56,6 +57,7 @@ complex_pathways <- data.frame(
 )
 complex_gmt <- prepare_gmt_data(complex_pathways)
 str(complex_gmt)
+
 
 # Example 4: Realistic human metabolic pathways
 human_pathways <- data.frame(

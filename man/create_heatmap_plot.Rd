@@ -45,8 +45,8 @@ Generates a heatmap showing metabolite-pathway enrichment significance.
 
 # Generates a heatmap showing metabolite-pathway enrichment significance.
 
+
 # Create comprehensive example data
-set.seed(123)
 enrichment_results <- data.frame(
   Pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
               "Pentose phosphate pathway", "Pyruvate metabolism",

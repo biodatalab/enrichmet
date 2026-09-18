@@ -12,15 +12,12 @@ is retained when multiple names are provided.}
 }
 \value{
 A data frame with columns \code{kegg_id} and \code{name}.
+
+
+kegg_lookup <- fetch_kegg_compound_lookup()
+head(kegg_lookup)
 }
 \description{
 Downloads the KEGG compound list and returns KEGG compound IDs
 with their corresponding names.
-}
-\examples{
-\donttest{
-kegg_lookup <- fetch_kegg_compound_lookup()
-head(kegg_lookup)
-}
-
 }

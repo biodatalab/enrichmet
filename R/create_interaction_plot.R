@@ -26,6 +26,7 @@
 #'         interaction network, or NULL if insufficient data is available.
 #'
 #' @examples
+#' 
 #' reactome_df <- data.frame(
 #'   KEGG = c("C00031", "C00031", "C00022", "C00022", "C00074", "C00074"),
 #'   ChEBI = c("4167", "4167", "16651", "16651", "16452", "16452"),
@@ -38,7 +39,7 @@
 #'   reactome_df = reactome_df
 #' )
 #' plot
-#'
+#' 
 #' @importFrom dplyr filter distinct mutate select group_by summarise
 #' @importFrom dplyr n_distinct left_join everything
 #' @importFrom igraph graph_from_data_frame degree betweenness components

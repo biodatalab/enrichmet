@@ -45,6 +45,7 @@ the same Reactome reaction; edge weight reflects the number of reactions
 they share.
 }
 \examples{
+
 reactome_df <- data.frame(
   KEGG = c("C00031", "C00031", "C00022", "C00022", "C00074", "C00074"),
   ChEBI = c("4167", "4167", "16651", "16651", "16452", "16452"),

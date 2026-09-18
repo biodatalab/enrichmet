@@ -19,10 +19,10 @@ it to the requested species. Data are retrieved at runtime and
 cached; no Reactome dump is redistributed with the package.
 }
 \examples{
-\donttest{
+
 reactome <- fetch_reactome_reactions(species = "Homo sapiens")
 head(reactome)
 nrow(reactome)
-}
+
 
 }

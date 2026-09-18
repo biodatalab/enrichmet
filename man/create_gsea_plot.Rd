@@ -20,8 +20,9 @@ A ggplot object showing GSEA results.
 Generates a visualization of GSEA results.
 }
 \examples{
+
 # Create comprehensive example GSEA results
-set.seed(123)
+
 gsea_results <- data.frame(
   pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
               "Pentose phosphate pathway", "Pyruvate metabolism",

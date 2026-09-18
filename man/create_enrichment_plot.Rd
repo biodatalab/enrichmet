@@ -17,6 +17,7 @@ A \code{ggplot} object showing enrichment results.
 Generates a visualization of pathway enrichment results.
 }
 \examples{
+
 # Always-runnable minimal example (no network, no dependencies)
 enr <- data.frame(
     Pathway = c("Glycolysis", "TCA cycle", "Pentose phosphate pathway"),
@@ -29,11 +30,20 @@ create_enrichment_plot(enr)
 
 PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
 
-metabolomics_path <- get_cached_file(
-    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+# Metabolomics matrix (bundled example data)
+metabolomics_path <- system.file(
+    "extdata", "example_data.csv",
+    package = "enrichmet"
 )
+
+if (metabolomics_path == "") {
+    stop("Example file 'example_data.csv' not found in inst/extdata/")
+}
+
 metabolomics_mat <- read.csv(
-    metabolomics_path, row.names = 1, check.names = FALSE
+    metabolomics_path,
+    row.names = 1,
+    check.names = FALSE
 )
 da_out <- run_de(
     metabolomics_mat, "TK-CMV", "K-CMV",

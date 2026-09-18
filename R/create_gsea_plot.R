@@ -9,8 +9,9 @@
 #' @return A ggplot object showing GSEA results.
 #'
 #' @examples
+#' 
 #' # Create comprehensive example GSEA results
-#' set.seed(123)
+#' 
 #' gsea_results <- data.frame(
 #'   pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
 #'               "Pentose phosphate pathway", "Pyruvate metabolism",
@@ -36,7 +37,7 @@
 #' # Create GSEA plot
 #' plot <- create_gsea_plot(gsea_results, top_n = 15)
 #' plot
-#'
+#' 
 #' @importFrom ggplot2 ggplot aes geom_point scale_color_gradient2 
 #' @importFrom ggplot2 labs theme_minimal theme element_text scale_size_continuous
 #' @importFrom dplyr arrange left_join

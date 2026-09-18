@@ -11,6 +11,7 @@
 #' @return A list of pathways with their associated metabolites in GMT format.
 #'
 #' @examples
+#' 
 #' # Example 1: Basic usage with KEGG metabolites
 #' PathwayVsMetabolites <- data.frame(
 #'   Pathway = c("Glycolysis", "TCA Cycle", "Pentose Phosphate"),
@@ -41,8 +42,9 @@
 #' )
 #' complex_gmt <- prepare_gmt_data(complex_pathways)
 #' str(complex_gmt)
-#'
+#' 
 #' @examples
+#'
 #' # Example 4: Realistic human metabolic pathways
 #' human_pathways <- data.frame(
 #'   Pathway = c(
@@ -74,7 +76,7 @@
 #'   min_pathway_size = 3
 #' )
 #' str(small_gmt)
-#'
+#' 
 #' @export
 prepare_gmt_data <- function(PathwayVsMetabolites, 
                              metabolites_in_data = NULL, 

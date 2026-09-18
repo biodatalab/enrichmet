@@ -25,13 +25,21 @@ every compound annotated in the pathway database.
 }
 \examples{
 
-example_path <- get_cached_file(
-    "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content"
+# Summary statistics (local example file)
+example_path <- system.file(
+    "extdata", "summary_stat.csv",
+    package = "enrichmet"
 )
+
+if (example_path == "") {
+    stop("Example file 'summary_stat.csv' not found in inst/extdata/")
+}
+
 example_data <- read.csv(example_path, stringsAsFactors = FALSE)
 measured <- extract_measured_kegg_ids(example_data)
 length(measured)
 head(measured)
+
 
 
 }

@@ -37,6 +37,7 @@
 #' }
 #'
 #' @examples
+#' 
 #' # Example 1: Basic GSEA with simulated data
 #' example_data <- data.frame(
 #'   kegg_id = paste0("C", sprintf("%05d", 1:100)),
@@ -55,7 +56,7 @@
 #' # Run GSEA
 #' gsea_results <- perform_gsea_analysis(example_data, PathwayVsMetabolites)
 #' head(gsea_results)
-#'
+#' 
 #' @export
 perform_gsea_analysis <- function(example_data, PathwayVsMetabolites, 
                                   minSize = 5, maxSize = 500,

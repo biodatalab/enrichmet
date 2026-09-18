@@ -18,12 +18,12 @@ A data frame containing KEGG-to-ChEBI-to-Reactome mappings.
 Links KEGG compounds to Reactome reactions through ChEBI identifiers.
 }
 \examples{
-\donttest{
+
 reactome_df <- fetch_kegg_reactome(
     kegg_ids = c("C00022", "C00031"),
     species = "Homo sapiens"
 )
 head(reactome_df)
-}
+
 
 }

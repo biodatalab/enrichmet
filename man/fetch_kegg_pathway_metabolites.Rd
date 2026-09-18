@@ -21,9 +21,9 @@ Downloads KEGG pathway and compound relationship data and returns
 pathway-level metabolite mappings via the public KEGG REST API.
 }
 \examples{
-\donttest{
+
 PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
 head(PathwayVsMetabolites)
-}
+
 
 }

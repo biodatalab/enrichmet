@@ -31,6 +31,7 @@ A data frame of pathway enrichment results including p-values, impact scores,
 Uses Fisher's exact test to identify enriched pathways for a set of metabolites.
 }
 \examples{
+
 # Create meaningful pathway data with real KEGG IDs
 PathwayVsMetabolites <- data.frame(
   Pathway = c("Glycolysis / Gluconeogenesis",

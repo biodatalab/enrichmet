@@ -22,7 +22,7 @@
 #' # Calculate centrality
 #' centrality <- calculate_metabolite_centrality(PathwayVsMetabolites)
 #' head(centrality)
-#'
+#' 
 #' @importFrom dplyr filter
 #' @importFrom tidyr unnest
 #' @importFrom igraph graph_from_data_frame betweenness graph.adjacency

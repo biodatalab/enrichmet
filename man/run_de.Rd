@@ -49,6 +49,7 @@ Performs differential expression analysis between two sample groups using LIMMA,
 generates volcano plots, and prepares results for downstream enrichment analysis.
 }
 \examples{
+
 # Example showing clear differential expression patterns
 set.seed(123)
 
@@ -85,4 +86,5 @@ head(sig_metabolites)
 
 # View summary statistics
 results$summary_stats
+
 }

@@ -26,6 +26,7 @@
 #' @importFrom utils head
 #'
 #' @examples
+#' 
 #' # Always-runnable minimal example (no network)
 #' cen <- data.frame(
 #'     Metabolite = c("C00031", "C00022", "C00074"),
@@ -38,11 +39,20 @@
 #' PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
 #' kegg_lookup <- fetch_kegg_compound_lookup()
 #'
-#' metabolomics_path <- get_cached_file(
-#'     "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+#' # Metabolomics matrix (bundled example data)
+#' metabolomics_path <- system.file(
+#'     "extdata", "example_data.csv",
+#'     package = "enrichmet"
 #' )
+#'
+#' if (metabolomics_path == "") {
+#'     stop("Example file 'example_data.csv' not found in inst/extdata/")
+#' }
+#'
 #' metabolomics_mat <- read.csv(
-#'     metabolomics_path, row.names = 1, check.names = FALSE
+#'     metabolomics_path,
+#'     row.names = 1,
+#'     check.names = FALSE
 #' )
 #' da_out <- run_de(
 #'     metabolomics_mat, "TK-CMV", "K-CMV",

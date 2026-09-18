@@ -70,6 +70,7 @@ enrichment at the top or bottom of a ranked list of metabolites. Handles complex
 metabolite IDs by extracting clean KEGG IDs for pathway matching.
 }
 \examples{
+
 # Example 1: Basic GSEA with simulated data
 example_data <- data.frame(
   kegg_id = paste0("C", sprintf("\%05d", 1:100)),
