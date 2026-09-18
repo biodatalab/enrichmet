@@ -1,7 +1,7 @@
 #' Calculate Metabolite Centrality
 #'
-#' Computes relative betweenness centrality for metabolites based on their 
-#' co-membership in metabolic pathways.
+#' Computes the relative betweenness centrality of metabolites derived from
+#' their co membership within metabolic pathways using the igraph R package.
 #'
 #' @param PathwayVsMetabolites A data frame containing pathways and their associated 
 #'        metabolites. Must include columns 'Pathway' and 'Metabolites'.

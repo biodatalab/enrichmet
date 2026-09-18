@@ -1,7 +1,7 @@
 Package: enrichmet
 Type: Package
 Title: enrichmet: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.10
+Version: 0.99.11
 Authors@R: 
     c(
         person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
@@ -18,7 +18,6 @@ Description: Provides functions to perform metabolite-based pathway enrichment
 License: AGPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.3.3
 URL: https://github.com/biodatalab/enrichmet/issues
 BugReports: https://github.com/biodatalab/enrichmet
 SystemRequirements: chron
@@ -38,15 +37,18 @@ Imports:
     scales,
     tibble,
     qvalue,
-    limma
+    limma,
+    KEGGREST
 Suggests: 
     knitr,
     readr,
     readxl,
     BiocFileCache,
     httr,
+    magick,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
+Config/roxygen2/version: 8.1.0

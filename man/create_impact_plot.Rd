@@ -7,41 +7,47 @@
 create_impact_plot(significant_results_df)
 }
 \arguments{
-\item{significant_results_df}{Data frame from perform_enrichment_analysis().}
+\item{significant_results_df}{Data frame from \code{perform_enrichment_analysis()}
+(or \code{enrichmet()}$pathway_enrichment_results). Must contain columns
+\code{Impact}, \code{Log_P_value}, and \code{Pathway}.}
 }
 \value{
-A ggplot object showing impact vs significance.
+A \code{ggplot} object showing pathway impact (x) versus
+  \eqn{-\log_{10}} \eqn{p}-value (y). Returns \code{NULL} if
+  \code{significant_results_df} has zero rows.
 }
 \description{
 Generates a visualization of pathway impact versus statistical significance.
 }
+\details{
+Each point is a pathway. Impact is a topology-based score; the vertical
+axis is enrichment significance. Pathways that are both statistically
+supported and structurally central stand out toward the upper right.
+}
 \examples{
-# Create comprehensive example enrichment results
-set.seed(123)
-significant_results_df <- data.frame(
-  Pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
-              "Pentose phosphate pathway", "Pyruvate metabolism",
-              "Amino sugar and nucleotide sugar metabolism",
-              "Glycine, serine and threonine metabolism",
-              "Cysteine and methionine metabolism",
-              "Valine, leucine and isoleucine degradation",
-              "Fatty acid degradation", "Oxidative phosphorylation",
-              "Purine metabolism", "Pyrimidine metabolism",
-              "Alanine, aspartate and glutamate metabolism",
-              "Butanoate metabolism", "Propanoate metabolism"),
-  Impact = c(0.85, 0.72, 0.68, 0.61, 0.55, 0.48, 0.45, 0.42, 0.38, 0.35,
-             0.52, 0.47, 0.41, 0.36, 0.32),
-  Log_P_value = -log10(c(1.2e-8, 3.4e-6, 2.1e-5, 7.8e-5, 1.5e-4,
-                        3.2e-4, 8.7e-4, 0.0012, 0.0023, 0.0041,
-                        0.0067, 0.0089, 0.012, 0.018, 0.025)),
-  P_value = c(1.2e-8, 3.4e-6, 2.1e-5, 7.8e-5, 1.5e-4, 3.2e-4, 8.7e-4,
-              0.0012, 0.0023, 0.0041, 0.0067, 0.0089, 0.012, 0.018, 0.025),
-  Adjusted_P_value = c(1.2e-6, 1.7e-4, 7.0e-4, 0.0013, 0.0024, 0.0040,
-                      0.0087, 0.012, 0.018, 0.027, 0.035, 0.042, 0.048, 0.060, 0.075)
+
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+
+metabolomics_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+)
+metabolomics_mat <- read.csv(
+    metabolomics_path, row.names = 1, check.names = FALSE
+)
+da_out <- run_de(
+    metabolomics_mat, "TK-CMV", "K-CMV",
+    fc_threshold = 1, pval_threshold = 0.05
 )
 
-# Create impact plot
-plot <- create_impact_plot(significant_results_df)
-plot
+enr <- perform_enrichment_analysis(
+    inputMetabolites = da_out$kegg_ready$kegg_id[
+        da_out$kegg_ready$Significant != "Not significant"
+    ],
+    PathwayVsMetabolites = PathwayVsMetabolites,
+    top_n = 15,
+    p_value_cutoff = 1
+)
+
+create_impact_plot(enr)
 
 }

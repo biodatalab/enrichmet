@@ -1,71 +1,67 @@
-#' Create STITCH Interaction Network
+#' Create Metabolite Interaction Network (Reactome)
 #'
-#' Generates a chemical interaction network using STITCH data.
+#' Generates a metabolite interaction network based on shared Reactome
+#' reactions. Two metabolites are connected by an edge if they co-occur in
+#' the same Reactome reaction; edge weight reflects the number of reactions
+#' they share.
 #'
-#' @param inputMetabolites A character vector of metabolite IDs.
-#' @param mapping_df Data frame mapping KEGG IDs to STITCH IDs and PubChem CIDs.
-#' @param stitch_df Data frame containing STITCH interaction data.
+#' @param inputMetabolites A character vector of metabolite IDs (KEGG IDs).
+#' @param reactome_df A data frame with the KEGG-to-Reactome reaction
+#'        mapping, e.g. the result of joining a KEGG-ChEBI conversion table
+#'        to Reactome's ChEBI2ReactomeReactions.txt. Must contain columns
+#'        'KEGG' and 'Reaction'. If you want to restrict to a species (e.g.
+#'        "Homo sapiens"), filter reactome_df on 'Species' before calling
+#'        this function.
 #' @param kegg_lookup Optional data frame for KEGG ID to name mapping.
+#'        Should contain columns 'kegg_id' and 'name'.
+#' @param min_shared_reactions Minimum number of shared Reactome reactions
+#'        required for two metabolites to be connected by an edge
+#'        (default 1).
+#' @param max_metabolites_per_reaction Reactions involving more than this
+#'        many of the input metabolites are skipped when building edges.
+#'        This avoids hairball edges coming from very generic/large
+#'        reactions that touch many unrelated metabolites (default 25).
 #'
-#' @return A ggraph object showing the chemical interaction network.
+#' @return A ggraph object showing the Reactome-based metabolite
+#'         interaction network, or NULL if insufficient data is available.
 #'
 #' @examples
-#' # Create comprehensive example STITCH data
-#' set.seed(123)
-#' inputMetabolites <- c("C00031", "C00022", "C00074", "C00036", "C00103", 
-#'                      "C00197", "C00186", "C00221", "C00024", "C00042")
-#'
-#' mapping_df <- data.frame(
-#'   KEGG_ID = c("C00031", "C00022", "C00074", "C00036", "C00103", 
-#'               "C00197", "C00186", "C00221", "C00024", "C00042",
-#'               "C00122", "C00149", "C00158", "C00117"),
-#'   STITCH_ID = c("CID00000579", "CID00000607", "CID00000586", "CID00000387",
-#'                 "CID00000534", "CID00000734", "CID00000596", "CID00000551",
-#'                 "CID00000176", "CID00000946", "CID00000330", "CID00001097",
-#'                 "CID00000625", "CID00000867"),
-#'   PubChem_CID = c(5793, 607, 586, 387, 534, 734, 596, 551, 176, 946, 
-#'                   330, 1097, 625, 867)
+#' reactome_df <- data.frame(
+#'   KEGG = c("C00031", "C00031", "C00022", "C00022", "C00074", "C00074"),
+#'   ChEBI = c("4167", "4167", "16651", "16651", "16452", "16452"),
+#'   Reaction = c("R-HSA-1", "R-HSA-2", "R-HSA-1", "R-HSA-3",
+#'                "R-HSA-2", "R-HSA-3"),
+#'   Species = "Homo sapiens"
 #' )
-#'
-#' # Create STITCH interaction data
-#' stitch_df <- data.frame(
-#'   chemical1 = c("CID00000579", "CID00000579", "CID00000607", "CID00000586",
-#'                 "CID00000387", "CID00000534", "CID00000734", "CID00000596",
-#'                 "CID00000551", "CID00000176", "CID00000946", "CID00000330",
-#'                 "CID00001097", "CID00000625", "CID00000867"),
-#'   chemical2 = c("CID00000534", "CID00000734", "CID00000586", "CID00000387",
-#'                 "CID00000551", "CID00000946", "CID00000596", "CID00000176",
-#'                 "CID00000330", "CID00001097", "CID00000625", "CID00000867",
-#'                 "CID00000579", "CID00000607", "CID00000534"),
-#'   combined_score = c(850, 720, 680, 790, 810, 730, 690, 760, 820, 710,
-#'                      750, 780, 670, 740, 710)
+#' plot <- create_interaction_plot(
+#'   inputMetabolites = c("C00031", "C00022", "C00074"),
+#'   reactome_df = reactome_df
 #' )
-#'
-#' kegg_lookup <- data.frame(
-#'   kegg_id = c("C00031", "C00022", "C00074", "C00036", "C00103", 
-#'               "C00197", "C00186", "C00221", "C00024", "C00042",
-#'               "C00122", "C00149", "C00158", "C00117"),
-#'   name = c("D-Glucose", "L-Lactate", "Oxaloacetate", "Citrate", 
-#'            "D-Fructose 6-phosphate", "3-Phospho-D-glyceroyl phosphate",
-#'            "L-Aspartate", "Oxoglutaric acid", "Acetyl-CoA", 
-#'            "Oxaloacetic acid", "L-Glutamate", "Succinyl-CoA",
-#'            "L-Malate", "D-Ribose 5-phosphate")
-#' )
-#'
-#' # Create interaction network plot
-#' plot <- create_interaction_plot(inputMetabolites, mapping_df, stitch_df, kegg_lookup)
 #' plot
 #'
-#' @importFrom dplyr filter distinct mutate select semi_join
-#' @importFrom igraph graph_from_data_frame degree betweenness components vcount ecount
-#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text theme_graph scale_edge_width
+#' @importFrom dplyr filter distinct mutate select group_by summarise
+#' @importFrom dplyr n_distinct left_join everything
+#' @importFrom igraph graph_from_data_frame degree betweenness components
+#' @importFrom igraph vcount ecount
+#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text
+#' @importFrom ggraph theme_graph scale_edge_width create_layout
 #' @importFrom scales rescale
-#' @importFrom stringr str_wrap str_trunc
+#' @importFrom stringr str_trunc
+#' @importFrom utils combn
 #' @export
-create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df, 
-                                    kegg_lookup = NULL) {
-    if (is.null(mapping_df) || is.null(stitch_df)) {
-        warning("STITCH interaction analysis requested but mapping_df or stitch_df not provided.")
+create_interaction_plot <- function(inputMetabolites,
+                                    reactome_df,
+                                    kegg_lookup = NULL,
+                                    min_shared_reactions = 1,
+                                    max_metabolites_per_reaction = 25) {
+    
+    if (is.null(reactome_df) || nrow(reactome_df) == 0) {
+        warning("Reactome interaction analysis requested but reactome_df not provided or empty.")
+        return(NULL)
+    }
+    
+    if (!all(c("KEGG", "Reaction") %in% colnames(reactome_df))) {
+        warning("reactome_df must contain 'KEGG' and 'Reaction' columns.")
         return(NULL)
     }
     
@@ -97,16 +93,16 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
     
     # Extract KEGG IDs from input metabolites
     message("Extracting KEGG IDs from input metabolites...")
-    extracted_kegg_ids <- vapply(inputMetabolites, extract_kegg_id, 
+    extracted_kegg_ids <- vapply(inputMetabolites, extract_kegg_id,
                                  FUN.VALUE = character(1))
-    valid_kegg_ids <- extracted_kegg_ids[!is.na(extracted_kegg_ids) & 
-                                             extracted_kegg_ids != ""]
+    valid_kegg_ids <- unique(extracted_kegg_ids[!is.na(extracted_kegg_ids) &
+                                                    extracted_kegg_ids != ""])
     
-    message("Successfully extracted ", length(valid_kegg_ids), 
+    message("Successfully extracted ", length(valid_kegg_ids),
             " KEGG IDs from ", length(inputMetabolites), " input metabolites")
     
     if (length(valid_kegg_ids) > 0) {
-        message("Sample extracted KEGG IDs: ", 
+        message("Sample extracted KEGG IDs: ",
                 paste(utils::head(unique(valid_kegg_ids)), collapse = ", "))
     }
     
@@ -115,28 +111,70 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
         return(NULL)
     }
     
-    # Create vertex_df using extracted KEGG IDs
-    vertex_df <- mapping_df %>%
-        dplyr::filter(KEGG_ID %in% valid_kegg_ids) %>%
-        dplyr::filter(!is.na(PubChem_CID)) %>%
-        dplyr::distinct(KEGG_ID, .keep_all = TRUE)
+    # Restrict the Reactome mapping to metabolites of interest
+    reactome_sub <- reactome_df %>%
+        dplyr::filter(KEGG %in% valid_kegg_ids) %>%
+        dplyr::distinct(KEGG, Reaction, .keep_all = TRUE)
     
-    message("Found ", nrow(vertex_df), 
-            " metabolites in mapping_df with valid PubChem CIDs")
+    message("Found ", dplyr::n_distinct(reactome_sub$KEGG),
+            " metabolites with ", dplyr::n_distinct(reactome_sub$Reaction),
+            " associated Reactome reactions")
     
-    if (nrow(vertex_df) == 0) {
-        warning("No metabolites found in mapping_df after KEGG ID extraction and filtering")
+    if (nrow(reactome_sub) == 0) {
+        warning("No Reactome reactions found for the supplied metabolites")
         return(NULL)
     }
+    
+    # Build edges: two metabolites are connected if they co-occur in the
+    # same Reactome reaction. Weight = number of shared reactions.
+    message("Building metabolite co-occurrence edges from shared reactions...")
+    reactions_split <- split(reactome_sub$KEGG, reactome_sub$Reaction)
+    
+    edge_list <- lapply(reactions_split, function(mets_in_reaction) {
+        mets_in_reaction <- unique(mets_in_reaction)
+        n_mets <- length(mets_in_reaction)
+        if (n_mets < 2 || n_mets > max_metabolites_per_reaction) return(NULL)
+        
+        pairs <- utils::combn(sort(mets_in_reaction), 2, simplify = FALSE)
+        do.call(rbind, lapply(pairs, function(p) {
+            data.frame(from = p[1], to = p[2], stringsAsFactors = FALSE)
+        }))
+    })
+    edge_list <- edge_list[!vapply(edge_list, is.null, logical(1))]
+    
+    if (length(edge_list) == 0) {
+        warning("No shared reactions found between any pair of input metabolites")
+        return(NULL)
+    }
+    
+    all_edges <- do.call(rbind, edge_list)
+    
+    valid_edges <- all_edges %>%
+        dplyr::group_by(from, to) %>%
+        dplyr::summarise(shared_reactions = dplyr::n(), .groups = "drop") %>%
+        dplyr::filter(shared_reactions >= min_shared_reactions)
+    
+    message("Found ", nrow(valid_edges), " valid metabolite pairs sharing >= ",
+            min_shared_reactions, " reaction(s)")
+    
+    if (nrow(valid_edges) == 0) {
+        warning("Insufficient Reactome data to build interaction graph after filtering.")
+        return(NULL)
+    }
+    
+    # Create vertex_df using metabolites present in the valid edges
+    vertex_ids <- unique(c(valid_edges$from, valid_edges$to))
+    vertex_df <- data.frame(KEGG_ID = vertex_ids, stringsAsFactors = FALSE)
     
     # KEGG name mapping (optional)
     if (!is.null(kegg_lookup)) {
         if (all(c("kegg_id", "name") %in% colnames(kegg_lookup))) {
             vertex_df <- vertex_df %>%
-                dplyr::left_join(kegg_lookup, 
+                dplyr::left_join(kegg_lookup,
                                  by = c("KEGG_ID" = "kegg_id")) %>%
-                dplyr::mutate(display_name = ifelse(!is.na(name), 
-                                                    name, KEGG_ID))
+                dplyr::mutate(display_name = ifelse(!is.na(name),
+                                                    name, KEGG_ID)) %>%
+                dplyr::select(-name)
             message("Applied KEGG pathway name mapping")
         } else {
             warning("kegg_lookup provided but missing required columns 'kegg_id' and 'name'")
@@ -150,59 +188,35 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
     
     vertex_df <- vertex_df %>%
         dplyr::mutate(display_name = stringr::str_trunc(display_name, 25)) %>%
-        dplyr::select(STITCH_ID, dplyr::everything())
+        dplyr::select(name = KEGG_ID, display_name, dplyr::everything())
     
     # Debug: Show what display names we have
     if (nrow(vertex_df) > 0) {
-        message("Display names sample: ", 
+        message("Display names sample: ",
                 paste(utils::head(vertex_df$display_name), collapse = ", "))
     }
     
-    # Create edge list
-    valid_edges <- stitch_df %>%
-        dplyr::filter(combined_score >= 50) %>%
-        dplyr::semi_join(vertex_df, by = c("chemical1" = "STITCH_ID")) %>%
-        dplyr::semi_join(vertex_df, by = c("chemical2" = "STITCH_ID")) %>%
-        dplyr::distinct(chemical1, chemical2, .keep_all = TRUE)
+    message("Creating graph with ", nrow(vertex_df), " vertices")
+    message("Vertex attributes: ", paste(names(vertex_df), collapse = ", "))
     
-    message("Found ", nrow(valid_edges), " valid interactions between ", 
-            nrow(vertex_df), " metabolites")
-    
-    if (nrow(vertex_df) == 0 || nrow(valid_edges) == 0) {
-        warning("Insufficient STITCH data to build interaction graph.")
-        return(NULL)
-    }
-    
-    # Create graph - CRITICAL: Make sure vertex_df has the right columns
-    # The vertices data frame for igraph::graph_from_data_frame should have 
-    # name as first column
-    vertices_for_graph <- vertex_df %>%
-        dplyr::filter(STITCH_ID %in% c(valid_edges$chemical1, 
-                                       valid_edges$chemical2)) %>%
-        dplyr::select(name = STITCH_ID, display_name, KEGG_ID, PubChem_CID)  
-    
-    message("Creating graph with ", nrow(vertices_for_graph), " vertices")
-    message("Vertex attributes: ", paste(names(vertices_for_graph), 
-                                         collapse = ", "))
-    
+    # Create graph
     g <- igraph::graph_from_data_frame(
-        d = valid_edges %>% 
-            dplyr::select(chemical1, chemical2, dplyr::everything()) %>%
-            dplyr::mutate(weight = scales::rescale(combined_score, 
+        d = valid_edges %>%
+            dplyr::mutate(weight = scales::rescale(shared_reactions,
                                                    to = c(0.1, 1))),
         directed = FALSE,
-        vertices = vertices_for_graph  # Use the properly formatted vertices
+        vertices = vertex_df
     )
     
     if (igraph::vcount(g) == 0 || igraph::ecount(g) == 0) {
-        warning("STITCH graph has no vertices or edges.")
+        warning("Reactome graph has no vertices or edges.")
         return(NULL)
     }
     
     # Debug: Check what attributes are in the graph
-    message("Graph vertex attributes: ", 
+    message("Graph vertex attributes: ",
             paste(names(igraph::vertex_attr(g)), collapse = ", "))
-    message("Sample vertex display_names: ", 
+    message("Sample vertex display_names: ",
             paste(utils::head(igraph::V(g)$display_name), collapse = ", "))
     
     # Calculate graph metrics
@@ -223,7 +237,7 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
     num_components <- comps$no
     
     if (num_components > 1) {
-        message("Graph has ", num_components, 
+        message("Graph has ", num_components,
                 " disconnected components - using GEM layout")
         best_layout <- "gem"
     } else {
@@ -235,7 +249,7 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
         for (layout_name in layouts_to_try) {
             tryCatch({
                 layout_pos <- ggraph::create_layout(g, layout = layout_name)
-                node_distances <- as.matrix(stats::dist(layout_pos[, 
+                node_distances <- as.matrix(stats::dist(layout_pos[,
                                                                    seq_len(2)]))
                 diag(node_distances) <- NA
                 avg_distance <- mean(node_distances, na.rm = TRUE)
@@ -248,7 +262,7 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
         }
         
         if (is.null(best_layout)) best_layout <- "fr"
-        message("Using layout: ", best_layout, " (spacing score: ", 
+        message("Using layout: ", best_layout, " (spacing score: ",
                 round(best_spacing, 2), ")")
     }
     
@@ -256,20 +270,20 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
     interaction_plot <- ggraph::ggraph(g, layout = best_layout) +
         # Draw edges
         ggraph::geom_edge_link(
-            aes(width = weight), 
+            aes(width = weight),
             color = "#606060",
             alpha = 0.4,
             show.legend = TRUE
         ) +
         # Draw nodes
         ggraph::geom_node_point(
-            aes(size = degree, color = as.factor(component)), 
+            aes(size = degree, color = as.factor(component)),
             alpha = 0.8,
             stroke = 0.5
         ) +
         # Add labels - use display_name from vertex attributes
         ggraph::geom_node_text(
-            aes(label = display_name),  # Just use display_name directly
+            aes(label = display_name),
             size = 3.5,
             repel = TRUE,
             box.padding = 0.8,
@@ -284,7 +298,7 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
         ) +
         ggplot2::scale_color_discrete(name = "Network Component") +
         ggplot2::scale_size_continuous(
-            name = "Degree (Connections)", 
+            name = "Degree (Connections)",
             range = c(3, 10),
             breaks = degree_breaks,
             guide = ggplot2::guide_legend(
@@ -293,25 +307,24 @@ create_interaction_plot <- function(inputMetabolites, mapping_df, stitch_df,
             )
         ) +
         ggraph::scale_edge_width(
-            name = "Interaction Strength",
+            name = "Shared Reactions",
             range = c(0.5, 2)
         ) +
         ggplot2::labs(
-            title = "Metabolite Interaction Network (STITCH)",
+            title = "Metabolite Interaction Network (Reactome)",
             subtitle = paste(
                 igraph::vcount(g),
                 "compounds with",
                 igraph::ecount(g),
-                "interactions | Layout:",
-                toupper(best_layout)
+                "shared-reaction edges"
             )
         ) +
         ggraph::theme_graph(base_family = "sans") +
         ggplot2::theme(
             legend.position = "right",
-            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", 
+            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold",
                                                family = "sans"),
-            plot.subtitle = ggplot2::element_text(hjust = 0.5, 
+            plot.subtitle = ggplot2::element_text(hjust = 0.5,
                                                   family = "sans"),
             legend.key.height = ggplot2::unit(0.8, "lines")
         )
