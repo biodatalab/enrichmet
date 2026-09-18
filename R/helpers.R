@@ -98,47 +98,56 @@ get_cached_file <- function(url) {
         stop("url must be a single non-empty character string.", call. = FALSE)
     }
     
-    # Use a consistent, non-interactive cache
     bfc <- BiocFileCache::BiocFileCache(ask = FALSE)
     
-    # Look for existing entry
+    # 1. Try to find existing entry
     cached <- BiocFileCache::bfcquery(bfc, query = url, field = "rname")
     
     if (nrow(cached) > 0) {
         rid <- cached$rid[1]
-        
-        # Verify the rid still exists in the cache
-        if (rid %in% BiocFileCache::bfcrid(bfc)) {
-            path <- tryCatch(
-                BiocFileCache::bfcrpath(bfc, rids = rid),
-                error = function(e) NULL
-            )
-            
-            if (!is.null(path) && length(path) > 0 && file.exists(path[1])) {
-                return(path[1])
-            }
+        path <- tryCatch(
+            BiocFileCache::bfcrpath(bfc, rids = rid),
+            error = function(e) NULL
+        )
+        if (!is.null(path) && length(path) > 0 && file.exists(path[1])) {
+            return(path[1])
         }
     }
     
-    # Not found or invalid → download and add
-    rid <- BiocFileCache::bfcadd(
-        bfc,
-        rname = url,
-        fpath = url,
-        download = TRUE,
-        rtype = "web"
+    # 2. Download + add
+    rid <- tryCatch(
+        BiocFileCache::bfcadd(
+            bfc,
+            rname = url,
+            fpath = url,
+            download = TRUE,
+            rtype = "web"
+        ),
+        error = function(e) {
+            stop("Failed to download resource: ", url, "\n", conditionMessage(e), call. = FALSE)
+        }
     )
     
-    path <- BiocFileCache::bfcrpath(bfc, rids = rid)
+    # 3. Safely retrieve the path (retry once if needed)
+    path <- tryCatch(
+        BiocFileCache::bfcrpath(bfc, rids = rid),
+        error = function(e) {
+            # Rare race condition on some build machines – re-query
+            cached2 <- BiocFileCache::bfcquery(bfc, query = url, field = "rname")
+            if (nrow(cached2) > 0) {
+                BiocFileCache::bfcrpath(bfc, rids = cached2$rid[1])
+            } else {
+                stop("Failed to retrieve cached path for: ", url, call. = FALSE)
+            }
+        }
+    )
     
     if (length(path) == 0 || !file.exists(path[1])) {
-        stop("Failed to download and cache resource: ", url, call. = FALSE)
+        stop("Cached file does not exist after download: ", url, call. = FALSE)
     }
     
     path[1]
 }
-
-
 # Optional: Create a test function
 #' @keywords internal
 .test_example_data <- function() {
