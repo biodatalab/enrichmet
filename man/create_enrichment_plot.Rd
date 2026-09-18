@@ -7,45 +7,51 @@
 create_enrichment_plot(enrichment_results)
 }
 \arguments{
-\item{enrichment_results}{Data frame with enrichment analysis results.}
+\item{enrichment_results}{Data frame with enrichment analysis results.
+Must contain columns \code{Pathway}, \code{Log_P_value}, and \code{Count}.}
 }
 \value{
-A ggplot object showing pathway enrichment results.
-
-Create Enrichment Plot
-
-Generates a visualization of pathway enrichment results.
-
-A ggplot object showing enrichment results.
+A \code{ggplot} object showing enrichment results.
 }
 \description{
 Generates a visualization of pathway enrichment results.
 }
 \examples{
-# Create comprehensive example enrichment results
-set.seed(123)
-enrichment_results <- data.frame(
-  Pathway = c("Glycolysis / Gluconeogenesis", "Citrate cycle (TCA cycle)",
-              "Pentose phosphate pathway", "Pyruvate metabolism",
-              "Amino sugar and nucleotide sugar metabolism",
-              "Glycine, serine and threonine metabolism",
-              "Cysteine and methionine metabolism",
-              "Valine, leucine and isoleucine degradation",
-              "Fatty acid degradation", "Oxidative phosphorylation",
-              "Purine metabolism", "Pyrimidine metabolism",
-              "Alanine, aspartate and glutamate metabolism",
-              "Butanoate metabolism", "Propanoate metabolism"),
-  Log_P_value = -log10(c(1.2e-8, 3.4e-6, 2.1e-5, 7.8e-5, 1.5e-4,
-                        3.2e-4, 8.7e-4, 0.0012, 0.0023, 0.0041,
-                        0.0067, 0.0089, 0.012, 0.018, 0.025)),
-  Adjusted_P_value = c(1.2e-6, 1.7e-4, 7.0e-4, 0.0013, 0.0024,
-                      0.0040, 0.0087, 0.012, 0.018, 0.027,
-                      0.035, 0.042, 0.048, 0.060, 0.075),
-  Count = c(15, 12, 10, 9, 8, 7, 7, 6, 6, 5, 8, 7, 6, 5, 4)
+# Always-runnable minimal example (no network, no dependencies)
+enr <- data.frame(
+    Pathway = c("Glycolysis", "TCA cycle", "Pentose phosphate pathway"),
+    Log_P_value = c(3.2, 2.1, 1.4),
+    Count = c(8, 5, 3),
+    stringsAsFactors = FALSE
+)
+create_enrichment_plot(enr)
+
+
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+
+metabolomics_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+)
+metabolomics_mat <- read.csv(
+    metabolomics_path, row.names = 1, check.names = FALSE
+)
+da_out <- run_de(
+    metabolomics_mat, "TK-CMV", "K-CMV",
+    fc_threshold = 1, pval_threshold = 0.05
+)
+query <- da_out$kegg_ready$kegg_id[
+    da_out$kegg_ready$Significant != "Not significant"
+]
+query <- query[!is.na(query) & query != ""]
+
+enr_real <- perform_enrichment_analysis(
+    inputMetabolites = query,
+    PathwayVsMetabolites = PathwayVsMetabolites,
+    top_n = 15,
+    p_value_cutoff = 1
 )
 
-# Create enrichment plot
-plot <- create_enrichment_plot(enrichment_results)
-plot
+create_enrichment_plot(enr_real)
+
 
 }

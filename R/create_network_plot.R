@@ -1,77 +1,79 @@
-#' Create Metabolite-Pathway Network
+#' Create Metabolite Pathway Network
 #'
-#' Generates a metabolite-pathway interaction network visualization.
+#' Generates a metabolite pathway interaction network visualization.
 #'
-#' @param inputMetabolites A character vector of metabolite IDs.
-#' @param PathwayVsMetabolites A data frame with pathway-metabolite associations.
-#' @param kegg_lookup Optional data frame for KEGG ID to name mapping.
-#' @param top_n Integer specifying the number of top metabolites to display, 
-#'   selected based on their relative betweenness centrality (RBC) scores. 
-#'   If `NULL` (default), all metabolites are included.
-#' @param font_family Font family for text elements. Defaults to "sans" for 
-#'   system compatibility. Avoid specialized fonts that may not be available 
-#'   on all systems.
-#' @return A ggraph object showing the metabolite-pathway network.
+#' @param inputMetabolites Character vector of metabolite IDs
+#' @param PathwayVsMetabolites Data frame with pathway metabolite associations
+#' @param kegg_lookup Optional data frame for KEGG ID to name mapping
+#' @param top_n Number of top metabolites to display based on centrality
+#' @param font_family Font family for text elements
+#'
+#' @return A ggraph object showing the metabolite pathway network
 #'
 #' @examples
-#' # Create comprehensive example data
-#' inputMetabolites <- paste0("C", sprintf("%05d", 1:25))
-#' 
-#' PathwayVsMetabolites <- data.frame(
-#'   Pathway = c("Glycolysis", "TCA cycle", "Pentose phosphate", 
-#'               "Amino acid metabolism", "Lipid metabolism",
-#'               "Nucleotide metabolism", "Oxidative phosphorylation"),
-#'   Metabolites = c("C00031,C00022,C00118,C00197,C00074,C00036,C00186,C00221,C00089,C00103",
-#'                   "C00024,C00036,C00042,C00122,C00149,C00158,C00417,C05379",
-#'                   "C00117,C00231,C00279,C00345,C01172,C01236",
-#'                   "C00025,C00026,C00041,C00049,C00064,C00135",
-#'                   "C00083,C00162,C00249,C00422,C01205",
-#'                   "C00106,C00112,C00144,C00212,C00262",
-#'                   "C00009,C00013,C00080,C01345,C05345")
+#' # Always-runnable minimal example (no network)
+#' pw <- data.frame(
+#'     Pathway = c("Glycolysis", "TCA cycle"),
+#'     Metabolites = c("C00031,C00022,C00074", "C00036,C00042,C00026"),
+#'     stringsAsFactors = FALSE
+#' )
+#' mets <- c("C00031", "C00022", "C00036")
+#' create_network_plot(mets, pw, kegg_lookup = NULL, top_n = 2)
+#'
+#'
+#' PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+#' kegg_lookup <- fetch_kegg_compound_lookup()
+#'
+#' metabolomics_path <- get_cached_file(
+#'     "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+#' )
+#' metabolomics_mat <- read.csv(
+#'     metabolomics_path, row.names = 1, check.names = FALSE
+#' )
+#' da_out <- run_de(
+#'     metabolomics_mat, "TK-CMV", "K-CMV",
+#'     fc_threshold = 1, pval_threshold = 0.05
+#' )
+#' query <- da_out$kegg_ready$kegg_id[
+#'     da_out$kegg_ready$Significant != "Not significant"
+#' ]
+#' query <- query[!is.na(query) & query != ""]
+#'
+#' create_network_plot(
+#'     query,
+#'     PathwayVsMetabolites,
+#'     kegg_lookup = kegg_lookup,
+#'     top_n = 10
 #' )
 #' 
-#' # Create KEGG lookup
-#' kegg_lookup <- data.frame(
-#'   kegg_id = paste0("C", sprintf("%05d", 1:30)),
-#'   name = c("Glucose", "Lactate", "Pyruvate", "Alanine", "Glutamate",
-#'            "Citrate", "Succinate", "Malate", "Aspartate", "Glutamine",
-#'            "Acetyl-CoA", "Oxaloacetate", "Alpha-ketoglutarate", "Fumarate",
-#'            "Isocitrate", "Ribose-5P", "Glycerol-3P", "Dihydroxyacetone-P",
-#'            "Fructose-6P", "Glucose-6P", "Phosphoenolpyruvate", "ATP", "ADP",
-#'            "NAD+", "NADH", "Coenzyme A", "Acetate", "Butyrate", "Propionate", "Glycine")
-#' )
 #'
-#' # Create network plot
-#' plot <- create_network_plot(inputMetabolites, PathwayVsMetabolites, kegg_lookup)
-#' plot
-#'
-#' @importFrom dplyr filter select mutate
-#' @importFrom tidyr unnest
-#' @importFrom igraph graph_from_data_frame betweenness degree vcount ecount V
-#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text
-#' @importFrom ggplot2 scale_color_manual scale_size_continuous labs theme element_text
 #' @export
-create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_lookup = NULL, top_n = 20, font_family = "sans") {
+create_network_plot <- function(
+        inputMetabolites,
+        PathwayVsMetabolites,
+        kegg_lookup = NULL,
+        top_n = 20,
+        font_family = "sans"
+) {
     
-    # Limit to top N metabolites if specified
     if (!is.null(top_n) && top_n < length(inputMetabolites)) {
-        # If we have centrality data, use it to select top metabolites
+        
         all_centrality <- calculate_metabolite_centrality(PathwayVsMetabolites)
-        top_metabolites <- all_centrality %>%
-            dplyr::filter(Metabolite %in% inputMetabolites) %>%
-            dplyr::arrange(desc(RBC_Metabolite)) %>%
-            head(top_n) %>%
+        
+        selected_metabolites <- all_centrality |>
+            dplyr::filter(Metabolite %in% inputMetabolites) |>
+            dplyr::arrange(desc(RBC_Metabolite)) |>
+            head(top_n) |>
             dplyr::pull(Metabolite)
         
-        message("Using top ", top_n, " metabolites by centrality for network plot")
-        selected_metabolites <- top_metabolites
+        message("Using top ", top_n, " metabolites by centrality")
     } else {
         selected_metabolites <- inputMetabolites
     }
     
-    df <- PathwayVsMetabolites %>%
-        dplyr::mutate(Metabolite = strsplit(Metabolites, ",")) %>%
-        tidyr::unnest(Metabolite) %>%
+    df <- PathwayVsMetabolites |>
+        dplyr::mutate(Metabolite = strsplit(Metabolites, ",")) |>
+        tidyr::unnest(Metabolite) |>
         dplyr::filter(Metabolite %in% selected_metabolites)
     
     if (nrow(df) == 0) {
@@ -79,74 +81,103 @@ create_network_plot <- function(inputMetabolites, PathwayVsMetabolites, kegg_loo
         return(NULL)
     }
     
-    edges <- df %>% dplyr::select(Pathway, Metabolite)
+    edges <- df |> dplyr::select(Pathway, Metabolite)
     g <- igraph::graph_from_data_frame(edges, directed = FALSE)
     
-    # Calculate centrality for node sizing
-    node_centrality <- igraph::betweenness(g, directed = FALSE, normalized = TRUE)
+    igraph::V(g)$type <- ifelse(
+        igraph::V(g)$name %in% df$Pathway,
+        "Pathway",
+        "Metabolite"
+    )
     
-    # Set node attributes
-    igraph::V(g)$type <- ifelse(igraph::V(g)$name %in% df$Pathway, "Pathway", "Metabolite")
-    igraph::V(g)$centrality <- node_centrality[igraph::V(g)$name]
     igraph::V(g)$degree <- igraph::degree(g)
     
-    # Add metabolite names if available
     if (!is.null(kegg_lookup)) {
         metabolite_names <- kegg_lookup$name
         names(metabolite_names) <- kegg_lookup$kegg_id
         
         igraph::V(g)$display_name <- ifelse(
             igraph::V(g)$type == "Metabolite",
-            ifelse(!is.na(metabolite_names[igraph::V(g)$name]), 
-                   metabolite_names[igraph::V(g)$name], 
-                   igraph::V(g)$name),
+            ifelse(
+                !is.na(metabolite_names[igraph::V(g)$name]),
+                metabolite_names[igraph::V(g)$name],
+                igraph::V(g)$name
+            ),
             igraph::V(g)$name
         )
     } else {
         igraph::V(g)$display_name <- igraph::V(g)$name
     }
     
-    # Create network plot - CRITICAL FIX: Replace theme_graph() 
     network_plot <- ggraph::ggraph(g, layout = "fr") +
-        ggraph::geom_edge_link(alpha = 0.3, color = "#606060") +
-        ggraph::geom_node_point(aes(color = type, size = degree), alpha = 0.8) +
+        ggraph::geom_edge_link(
+            alpha = 0.3,
+            color = "#808080"
+        ) +
+        ggraph::geom_node_point(
+            ggplot2::aes(
+                color = type,
+                size = degree
+            ),
+            alpha = 0.85
+        ) +
         ggraph::geom_node_text(
-            aes(label = display_name),
-            size = 3, repel = TRUE, max.overlaps = 50,
+            ggplot2::aes(label = display_name),
+            repel = TRUE,
+            size = 3,
             family = font_family,
-            fontface = ifelse(igraph::V(g)$type == "Pathway", "bold", "plain")
+            fontface = ifelse(
+                igraph::V(g)$type == "Pathway",
+                "bold",
+                "plain"
+            ),
+            max.overlaps = 50
         ) +
         ggplot2::scale_color_manual(
-            name = "Node Type",
-            values = c("Metabolite" = "red", "Pathway" = "blue"),
-            labels = c("Metabolite", "Pathway")
+            name = "Node type",
+            values = c(
+                Metabolite = "#1F78B4",
+                Pathway = "#33A02C"
+            )
         ) +
-        ggplot2::scale_size_continuous(name = "Connections", range = c(2, 8)) +
+        ggplot2::scale_size_continuous(
+            name = "Number of connections",
+            range = c(2, 8)
+        ) +
         ggplot2::labs(
-            title = paste("Metabolite-Pathway Network (Top", top_n, "Metabolites)"),
-            subtitle = paste("Showing", igraph::vcount(g), "nodes and", igraph::ecount(g), "connections")
+            title = paste(
+                "Metabolite Pathway Network Top",
+                top_n,
+                "metabolites"
+            ),
+            subtitle = paste(
+                igraph::vcount(g),
+                "nodes and",
+                igraph::ecount(g),
+                "edges"
+            )
         ) +
-        # REPLACE ggraph::theme_graph() with ggplot2::theme_void() + customizations
         ggplot2::theme_void() +
         ggplot2::theme(
             plot.title = ggplot2::element_text(
-                face = "bold", 
-                hjust = 0.5, 
-                family = font_family,
+                face = "bold",
+                hjust = 0.5,
                 size = 14,
-                margin = ggplot2::margin(b = 10)
+                family = font_family
             ),
             plot.subtitle = ggplot2::element_text(
-                hjust = 0.5, 
-                family = font_family,
+                hjust = 0.5,
                 size = 11,
-                margin = ggplot2::margin(b = 15)
+                family = font_family
             ),
-            legend.title = ggplot2::element_text(family = font_family, face = "bold"),
-            legend.text = ggplot2::element_text(family = font_family),
             legend.position = "right",
-            legend.box.background = ggplot2::element_rect(fill = "white", color = NA),
-            legend.background = ggplot2::element_blank()
+            legend.title = ggplot2::element_text(
+                face = "bold",
+                family = font_family
+            ),
+            legend.text = ggplot2::element_text(
+                family = font_family
+            )
         )
     
     return(network_plot)

@@ -38,7 +38,6 @@
 #'
 #' @examples
 #' # Example 1: Basic GSEA with simulated data
-#' set.seed(123)
 #' example_data <- data.frame(
 #'   kegg_id = paste0("C", sprintf("%05d", 1:100)),
 #'   log2fc = rnorm(100, mean = 0, sd = 1),
@@ -73,7 +72,6 @@ perform_gsea_analysis <- function(example_data, PathwayVsMetabolites,
     
     # Set seed if provided using withr for safe handling
     if (!is.null(seed)) {
-        # Store the message but don't execute set.seed
         message("Note: Random seed parameter (", seed, ") ignored in production code. ",
                 "Use withr::with_seed() for reproducible examples/tests.")
     }

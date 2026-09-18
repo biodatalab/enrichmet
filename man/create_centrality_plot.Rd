@@ -7,41 +7,62 @@
 create_centrality_plot(centrality_results, top_n = 20, kegg_lookup = NULL)
 }
 \arguments{
-\item{centrality_results}{Data frame from calculate_metabolite_centrality().}
+\item{centrality_results}{Data frame from
+\code{calculate_metabolite_centrality()}, typically filtered to the query
+metabolites. Must contain \code{Metabolite} and \code{RBC_Metabolite};
+may already contain \code{Display_Name}.}
 
 \item{top_n}{Number of top metabolites to display (default = 20).}
 
-\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
+\item{kegg_lookup}{Optional data frame with columns \code{kegg_id} and
+\code{name} for axis labels.}
 }
 \value{
-A ggplot object showing metabolite centrality.
+A \code{ggplot} object (horizontal bar chart of RBC). Returns
+  \code{NULL} if \code{centrality_results} has zero rows.
 }
 \description{
-Generates a visualization of metabolite centrality results.
+Generates a visualization of metabolite centrality results (relative
+betweenness centrality, RBC).
+}
+\details{
+Bars show relative betweenness centrality from the pathway–metabolite
+annotation graph only. Fold change and \eqn{p}-values are not used in the
+underlying centrality scores.
 }
 \examples{
-# Create comprehensive example centrality results
-set.seed(123)
-centrality_results <- data.frame(
-  Metabolite = paste0("C", sprintf("\%05d", 1:50)),
-  RBC_Metabolite = c(runif(30, 0.7, 0.95), runif(20, 0.3, 0.6))
+# Always-runnable minimal example (no network)
+cen <- data.frame(
+    Metabolite = c("C00031", "C00022", "C00074"),
+    RBC_Metabolite = c(0.12, 0.08, 0.05),
+    stringsAsFactors = FALSE
+)
+create_centrality_plot(cen, top_n = 3)
+
+
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+kegg_lookup <- fetch_kegg_compound_lookup()
+
+metabolomics_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+)
+metabolomics_mat <- read.csv(
+    metabolomics_path, row.names = 1, check.names = FALSE
+)
+da_out <- run_de(
+    metabolomics_mat, "TK-CMV", "K-CMV",
+    fc_threshold = 1, pval_threshold = 0.05
 )
 
-# Create KEGG lookup for metabolite names
-kegg_lookup <- data.frame(
-  kegg_id = paste0("C", sprintf("\%05d", 1:50)),
-  name = c("Glucose", "Lactate", "Pyruvate", "Alanine", "Glutamate",
-           "Citrate", "Succinate", "Malate", "Aspartate", "Glutamine",
-           "Acetyl-CoA", "Oxaloacetate", "Alpha-ketoglutarate", "Fumarate",
-           "Isocitrate", "Ribose-5P", "Glycerol-3P", "Dihydroxyacetone-P",
-           "Fructose-6P", "Glucose-6P", "Phosphoenolpyruvate", "2-Phosphoglycerate",
-           "3-Phosphoglycerate", "Glyceraldehyde-3P", "Sedioheptulose-7P",
-           "Xylulose-5P", "Ribulose-5P", "Erythrose-4P", "Acetate", "Butyrate",
-           paste0("Metabolite_", 31:50))
-)
+query <- da_out$kegg_ready$kegg_id[
+    da_out$kegg_ready$Significant != "Not significant"
+]
+query <- query[!is.na(query) & query != ""]
 
-# Create centrality plot
-plot <- create_centrality_plot(centrality_results, top_n = 15, kegg_lookup = kegg_lookup)
-plot
+cen <- calculate_metabolite_centrality(PathwayVsMetabolites)
+cen <- cen[cen$Metabolite \%in\% query, ]
+
+create_centrality_plot(cen, top_n = 15, kegg_lookup = kegg_lookup)
+
 
 }

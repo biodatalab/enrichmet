@@ -1,5 +1,5 @@
 ---
-title: "enrichmet Tutorial"
+title: "enrichmet: Pathway and Network Analysis for Metabolomics Tutorial"
 author: "Yonatan Ayalew Mekonnen"
 date: "`r Sys.Date()`"
 output:
@@ -7,276 +7,303 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{1. Quick and Easy Pathway and Network Analysis in Metabolomics}
+  %\VignetteIndexEntry{enrichmet: Pathway and Network Analysis for Metabolomics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>",
+    fig.align = "center",
+    message = FALSE,
+    warning = FALSE
+)
+```
 
 # Introduction
 
-Advances in metabolomics have enhanced our understanding of cellular processes by enabling the detection of hundreds of metabolites in a single experiment, offering insights into complex metabolic networks. Pathway Enrichment Analysis (PEA) is key to linking these metabolites to biological pathways, but existing tools often require multiple steps, lack robust visualization, depend on web-based interfaces, or rely on difficult to install R packages—hindering reproducibility and efficiency. To address these challenges, we present **enrichmet**, an R package for streamlined, reproducible pathway enrichment, metabolite set enrichment analysis (MetSEA), and network analysis. **enrichmet** integrates fgsea for fast MetSEA, igraph for topology-based metrics, and curated KEGG data for enrichment using Fisher’s Exact Test—all accessible via a single function call. Its flexible framework also supports diverse data types and applications beyond KEGG, empowering researchers to extract deeper biological insights with minimal effort.
+Advances in metabolomics allow hundreds of metabolites to be measured in a
+single experiment, but linking those features to biology still depends on
+pathway enrichment, set enrichment, and network analysis. Existing tools often
+chain multiple steps, rely on web services, or are hard to install
+reproducibly. **enrichmet** is an R/Bioconductor package for **local**,
+streamlined pathway analysis of metabolomics data. A single call to
+`enrichmet()` can run:
 
-**enrichmet** is implemented as a fully modular framework that can be executed through a single functional call. Each internal function implemented as a modular component accompanied illustrative examples demonstrating its functionality. **enrichmet** approach reduces repetitive tasks such as data formatting and parameter setup, helping users save time, minimize errors, and achieve more reproducible results. To offer more flexibility, the package provides modular functions that let users customize the workflow to meet specific needs. **enrichmet** emphasizes transparency and control, making outputs easy to access and integrate into broader R workflows. Importantly, since enrichment happens locally without relying on external web services, **enrichmet** is ideal for high-throughput and iterative analyses where speed and consistency are essential.
+- over-representation analysis (Fisher's exact test);
+- metabolite set enrichment analysis (MetSEA) via **fgsea**;
+- pathway–metabolite network topology (centrality via **igraph**);
+- pathway–metabolite and Reactome-based interaction visualisations.
 
-**enrichmet** generates a rich set of visualizations, including:
+The workflow is modular: internal steps are available as separate functions
+with examples, so users can run the full pipeline or customise individual
+stages. Enrichment runs locally (no required web UI for the statistical
+workflow), which suits high-throughput and iterative analyses.
 
-- **Pathway enrichment plot**
-- **Pathway impact plot**
-- **MetSEA plot**
-- **RBC plot**
-- **Network graph**
-- **Pathway heatmap**
-- **Pathway membership plot**
-- **Interaction network plot**
+Pathway and compound annotations are obtained at **runtime** from public APIs
+(KEGG REST, Reactome mappings, optional LION/BioPortal) and cached with
+**BiocFileCache**. The package does **not** redistribute third-party database
+dumps (KEGG, Reactome, or LION). Equivalent Pathway / Metabolites tables may
+be supplied by the user at runtime when preferred.
 
-The enrichmet() function produces three tables (S3 data.frame objects), which may include the MetSEA table, metabolite centrality, and pathway enrichment results. In addition, it generates eight plots (S3/S4 plot objects) as described above.If differential analysis is performed using the `run_da()` function, the workflow will also generate a **volcano plot** to visualize significant metabolite changes.
+`enrichmet()` returns result tables (pathway enrichment, MetSEA, centrality)
+and, optionally, plots including pathway enrichment, impact, MetSEA, relative
+betweenness (RBC), pathway–metabolite network, heatmap, membership, and
+Reactome interaction network. If differential analysis is run with `run_de()`,
+a volcano plot can also be included.
 
 # Installation
 
-You can install enrichmet as:
-
-```r
-if (!require("BiocManager", quietly = TRUE))
+```{r install, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
+}
 BiocManager::install("enrichmet")
+```
 
-```{r Case study of KrasG12D mutation}
-library(BiocFileCache)
-library(readxl)
-library(readr)
+```{r libraries}
 library(enrichmet)
 ```
-## Input Data Requirements
 
-The enrichment workflow operates on statistical results linked to the metabolites provided by the user. These results can be supplied in one of two formats  
-1. **Precomputed summary statistics**  
-2. **Raw metabolomics data**, from which the workflow will compute differential analysis results internally, as described in Section 2.3
+# Input requirements
 
-Both types of input may be provided either as a standalone `data.frame` or extracted from the `rowData()` of a `SummarizedExperiment` object.  
+`enrichmet()` needs a **query set** of metabolites and, for MetSEA or a
+measured background, **summary statistics**.
 
-Regardless of the format, the input must include the necessary identifiers and statistical columns required for the enrichment workflow. Detailed examples of the expected input structure for both *example_data* and *summary_stats* are provided in Section 2.3.
+## Query metabolites
 
-To run the **enrichmet** package, you must supply the three input files described below.
+Provide one of:
 
-### Summary Statistics Input
+1. `inputMetabolites` — character vector of KEGG IDs and/or names (see
+   Section 3.3); or
+2. `da_results` — output of `run_de()`, from which the query set is derived.
 
-If you choose to provide precomputed summary statistics, the input table must contain the following columns  
-* **met_id**  
-* **pval**  
-* **padj**  
-* **log2fc**
+| `input_type` | Behaviour |
+|--------------|-----------|
+| `"kegg"` (default) | Entries treated as KEGG IDs (`C#####`) |
+| `"name"` | Entries mapped to KEGG IDs via `kegg_lookup` |
+| `"mixed"` | Valid KEGG IDs kept; remaining entries mapped as names |
 
-These values represent the significance and magnitude of metabolite changes and serve as the foundation for the enrichment procedure. Because the package does not generate these statistics, they must be prepared prior to running the workflow.
+For `"name"` or `"mixed"`, supply `kegg_lookup` (e.g. from
+`fetch_kegg_compound_lookup()`).
 
-### Metabolomics Data Input
+## Summary statistics (optional but required for MetSEA)
 
-If you prefer to supply raw metabolomics data, the dataset should be organized with metabolites as row names and samples as column names. Each sample must include a clear group annotation. This format matches the structure shown in the *example_data* of section 2.3. The workflow will then perform the differential analysis internally before running the enrichment step. Then, you may provide the differential analysis output directly by passing `da_results = da_out`, which allows the workflow to extract the significant metabolites automatically. 
+A minimum run needs only the query set above. For MetSEA (and for building a
+measured-metabolite background), also provide a table in the format of
+`example_data` (Section 3.3) with:
 
-If you wish to specify your own list of metabolites of interest, you can supply them using the `inputMetabolites` argument as illustrated in section 2.3.
+- `met_id` — feature identifier (may embed KEGG IDs);
+- `pval` or `padj` — statistical significance;
+- `log2fc` — log2 fold change.
 
-### PathwayVsMetabolites Input
+MetSEA ranks metabolites by effect size and statistical evidence, so
+enrichment uses the ordered list rather than a binary significant /
+non-significant split.
 
-This file defines the mapping between metabolic pathways and their associated metabolites and serves as the background reference for the Fisher exact test used during enrichment. As described in section 2.3, the file must include two columns  
-* **Pathway**  
-* **Metabolites**
+## Pathway–metabolite map
 
-The Pathway column lists one pathway per row, and the Metabolites column provides a comma separated list of metabolites linked to that pathway, following the example in section 2.3.
+enrichmet requires a data frame with columns Pathway and Metabolites (comma-separated compound identifiers). This table is the annotation background: it defines which metabolites belong to which pathways and serves as the reference universe for Fisher’s exact test, so pathway over-representation can be assessed against known pathway membership.
 
-The pathway to metabolite mappings are obtained from the KEGG resource (https://www.kegg.jp/) using the KEGGREST package. To support reproducibility and reduce run time delays, curated human specific pathway to metabolite mappings are periodically updated and made available on Zenodo [1].
+For KEGG, mappings are not shipped with the package. They are retrieved
+at runtime from the KEGG REST API (`https://rest.kegg.jp/`) when the user
+calls `fetch_kegg_pathway_metabolites()`. Responses are cached locally with
+BiocFileCache so repeated calls in the same environment do not re-download
+unnecessarily.
 
-For demonstration purposes, the package includes an example summary statistics dataset. These example data are provided solely to illustrate the workflow and will be described in detail in a forthcoming publication.
+The `organism` argument is a KEGG organism code. For example, human (hsa):
 
-We provide a human-specific `PathwayVsMetabolites` file available here:  
-  [Human-Pathways.csv](https://zenodo.org/api/records/17819145/files/human_pathway.csv/content)  
-  However, users can supply a file tailored to their species of interest.
+```{r pathway-map, eval=FALSE}
+# Fetches human pathway list and compound–pathway links via the KEGG REST API
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
 
-- **`InputMetabolites`**  
-A user-supplied list of metabolites from the experimental dataset, typically provided as a set of metabolite identifiers (see *InputMetabolites* in section 2.3). This input is required when supplying summary statistics, as it defines the query set used for enrichment analysis.
+# Case study
 
-When performing differential analysis within the workflow, this argument should be set to `NULL` because the function extracts the significant metabolites directly from the differential analysis results.
+This case study uses human KEGG pathway maps and compound names retrieved via
+the KEGG REST API, example summary statistics `for` demonstration, and Reactome
+reaction mappings built at runtime.
 
-These metabolites are not included in the package and must be prepared by the user. All identifiers in the list must match those used in the background pathway–metabolite mapping (for example, KEGG compound IDs).
-
-For demonstration purposes, we also include summary statistics derived from an example experimental dataset. These example data are intended solely to showcase the package workflow and will be described in detail in a subsequent publication. 
-
-The **enrichmet**() function integrates both p-values and fold changes when performing MetSEA. By considering the direction and magnitude of changes, this approach yields richer biological insights than methods based only on binary classifications of "significant" versus "not significant."
-
-## Optional Input Files
-
-Including these optional files can enhance the analysis and its biological interpretation:
-
-- **`KEGGLookup`**  
-A reference file linking KEGG compound IDs to metabolite names or other annotations, used to standardize identifiers and enhance pathway mapping [1]. This file contains two columns: kegg_id and name, as shown in section 2.3 (kegg_lookup).
-  We provide a KEGGLookup file here:  
-  [kegg_lookup.xlsx](https://zenodo.org/api/records/15498097/files/kegg_lookup.xlsx/content)  
-  Users may also provide a lookup file specific to their species.
-
-- **`STITCHInteractions`**  
-A dataset of known or predicted interactions between metabolites and proteins, obtained from the freely available STITCH database (http://stitch.embl.de/). This file includes the columns chemical1, chemical2, similarity, experimental, database, textmining, and combined_score, as shown in section 2.3 (stitch_df). These interactions are useful for constructing networks to support pathway analysis [2].
-  We supply an example file here:  
-  [chemical_chemical.tsv](https://zenodo.org/api/records/15498097/files/chemical_chemical.tsv/content)  
-  Users may provide their own interaction data appropriate for their species.
-
-- **`mapping_df`**  
- A mapping data frame linking STITCH identifiers to metabolite names, facilitating integration across datasets. This file includes the columns KEGG_ID, PubChem_CID, and STITCH_ID, as shown in section 2.3 (mapping_df).
-  The provided example file is available here:  
-  [mapping_df.xlsx](https://zenodo.org/api/records/15498097/files/mapping_df.xlsx/content)  
-  Users can substitute this with a mapping file relevant to their species of interest.
-
-## Case study of KrasG12D mutation
-
-We used summary statistics from differential analyses based on metabolomic measurements comparing KrasG12D mutations with and without TAp73 deletion. The significant metabolites were selected for pathway enrichment analysis using Fisher’s Exact Test. These summary statistics were also utilized for MetSEA analysis.
-
-```{r load data and analysis}
-# InputMetabolites: A vector or list containing the metabolites of interest.
-inputMetabolites <- c( "C00209", "C00249", "C06424", "C01727", "C04025", "C00366", "C00385", "C08261", "C00079", "C00506", "C00093", "C02979", "C00106", "C01384", "C00219", "C00242", "C19806", "C00105", "C00606", "C00144", "C01216", "C06429",
-"C00475", "C00386", "C01046", "C02180", "C00082", "C00299", "C00051", "C16513", "C00387", "C00022", "C00026",
-"C01062", "C00418", "C00295", "C01762", "C00525", "C00074", "C00491", "C02067", "C00015", "C14829", "C00519",
-"C06428", "C05472", "C00328", "C16358", "C16357", "C16353", "C02632", "C00246", "C05842", "C00785", "C03739",
-"C00212", "C01181", "C00140", "C05021", "C02862", "C02721", "C01104", "C10172", "C00380", "C01262", "C05122",
-"C03736", "C00599", "C00446", "C00275", "C00103", "C00881", "C15587", "C00361", "C00429", "C01042", "C11439",
-"C05637", "C00127", "C00035", "C01909", "C00836", "C00847", "C04294", "C00043", "C01481", "C00301", "C05635",
-"C02140", "C05488", "C00570", "C01551", "C00092", "C03139"
+```{r case-study, message=TRUE}
+inputMetabolites <- c(
+    "C00209", "C00249", "C06424", "C01727", "C04025", "C00366", "C00385",
+    "C08261", "C00079", "C00506", "C00093", "C02979", "C00106", "C01384",
+    "C00219", "C00242", "C19806", "C00105", "C00606", "C00144", "C01216",
+    "C06429", "C00475", "C00386", "C01046", "C02180", "C00082", "C00299",
+    "C00051", "C16513", "C00387", "C00022", "C00026", "C01062", "C00418",
+    "C00295", "C01762", "C00525", "C00074", "C00491", "C02067", "C00015",
+    "C14829", "C00519", "C06428", "C05472", "C00328", "C16358", "C16357",
+    "C16353", "C02632", "C00246", "C05842", "C00785", "C03739", "C00212",
+    "C01181", "C00140", "C05021", "C02862", "C02721", "C01104", "C10172",
+    "C00380", "C01262", "C05122", "C03736", "C00599", "C00446", "C00275",
+    "C00103", "C00881", "C15587", "C00361", "C00429", "C01042", "C11439",
+    "C05637", "C00127", "C00035", "C01909", "C00836", "C00847", "C04294",
+    "C00043", "C01481", "C00301", "C05635", "C02140", "C05488", "C00570",
+    "C01551", "C00092", "C03139"
 )
-# Standard cache location
-cache_dir <- tools::R_user_dir("enrichmet", "cache")
-bfc <- BiocFileCache(cache_dir, ask = FALSE)
 
-# Helper function to download & cache any file from Zenodo
-get_cached_file <- function(url) {
-  bfcrpath(bfc, url)
-}
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+kegg_lookup <- fetch_kegg_compound_lookup()
 
-# -------------------------
-# Load files with caching
-# -------------------------
+example_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content"
+)
+example_data <- read.csv(example_path, stringsAsFactors = FALSE)
 
-# PathwayVsMetabolites
-pathway_url <- "https://zenodo.org/api/records/17819145/files/human_pathway.csv/content"
-pathway_path <- get_cached_file(pathway_url)
-PathwayVsMetabolites <- read.csv(pathway_path)
-str(PathwayVsMetabolites)
+kegg_ids <- extract_kegg_ids(PathwayVsMetabolites)
+reactome_df <- fetch_kegg_reactome(
+    kegg_ids = kegg_ids,
+    species = "Homo sapiens"
+)
 
-# SummaryStatistics
-example_url <- "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content"
-example_path <- get_cached_file(example_url)
-example_data <- read.csv(example_path)
-head(example_data)
-
-# KEGGLookup
-kegg_url <- "https://zenodo.org/api/records/17819145/files/kegg_lookup.xlsx/content"
-kegg_path <- get_cached_file(kegg_url)
-kegg_lookup <- read_excel(kegg_path)
-head(kegg_lookup)
-
-# Mapping_df
-mapping_url <- "https://zenodo.org/api/records/17819145/files/mapping_df.xlsx/content"
-mapping_path <- get_cached_file(mapping_url)
-mapping_df <- read_excel(mapping_path)
-head(mapping_df)
-
-# STITCHInteractions
-stitch_url <- "https://zenodo.org/records/17819145/files/stitch.tsv"
-stitch_path <- get_cached_file(stitch_url)
-stitch_df <- read_tsv(stitch_path)
-head(stitch_df)
-#  Run enrichment analysis 
-#loading the package
 results <- enrichmet(
     inputMetabolites = inputMetabolites,
     PathwayVsMetabolites = PathwayVsMetabolites,
-    example_data = example_data,  # Named parameter
-    kegg_lookup = kegg_lookup,    # Named parameter
+    example_data = example_data,
+    kegg_lookup = kegg_lookup,
+    reactome_df = reactome_df,
     top_n = 20,
     p_value_cutoff = 0.05,
-    mapping_df = mapping_df,
-    stitch_df = stitch_df,
     network_top_n = 10,
     heatmap_top_n = 20,
     membership_top_n = 20,
     min_pathway_occurrence = 2,
-    min_metabolite_occurrence = 1
+    min_metabolite_occurrence = 1,
+    input_type = "kegg"
 )
 ```
 
-## Display Plots
+## Background-corrected enrichment
 
-```{r display-plots1, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$pathway_plot)
+Fisher's exact test can be restricted to metabolites that were measured
+(testable) in the experiment, reducing bias from database compounds that were
+never observed.
+
+```{r background, message=TRUE}
+measured_background <- extract_measured_kegg_ids(example_data)
+
+results_bg <- enrichmet(
+    inputMetabolites = inputMetabolites,
+    PathwayVsMetabolites = PathwayVsMetabolites,
+    example_data = example_data,
+    kegg_lookup = kegg_lookup,
+    reactome_df = reactome_df,
+    top_n = 20,
+    p_value_cutoff = 1,
+    network_top_n = 10,
+    heatmap_top_n = 20,
+    membership_top_n = 20,
+    min_pathway_occurrence = 2,
+    min_metabolite_occurrence = 1,
+    backgroundMetabolites = measured_background,
+    input_type = "kegg"
+)
 ```
-Fig. 1. Pathway enrichment plot. The plot shows enriched pathways with their corresponding –log10 p-values. Circle size represents the number of metabolites associated with each pathway, while color indicates the adjusted p-value. Pathway enrichment was performed using Fisher’s exact test based on metabolite-to-pathway mappings, with metabolite lists as input.
 
-```{r display-plots2, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$impact_plot)
+A brief comparison of top pathways:
+
+```{r compare-bg}
+head(results$pathway_enrichment_results[, c("Pathway", "P_value", "Adjusted_P_value")], 5)
+head(results_bg$pathway_enrichment_results[, c("Pathway", "P_value", "Adjusted_P_value")], 5)
 ```
 
-Fig. 2. Pathway impact plot. The plot integrates enrichment significance with pathway topology to highlight the most influential pathways. The y-axis shows the −log10 p-value and x-axis shows the pathway impact value. Circle size reflects the pathway impact, while color represents the adjusted p-value. Together, these features emphasize pathways that are both statistically significant and topologically central.
+# Network centrality
 
-```{r display-plots3, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$gsea_plot)
-```
-Fig. 3. Metabolite Set Enrichment Analysis (MetSEA) plot. The plot shows enriched pathways with their corresponding –log10 p-values. Circle size represents the number of metabolites associated with each pathway, while color indicates the Normalized Enrichment Score (NES).
+calculate_metabolite_centrality() ranks metabolites from the pathway–metabolite annotation graph only. Metabolites that share pathways are linked; relative betweenness centrality (RBC) measures how often a metabolite lies on paths between others. Higher RBC means a more bridging role in the pathway map.
+Those may only decide which metabolites are selected as input; once the set is fixed, ranking is purely topological.
 
-```{r display-plots4, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$rbc_plot)
-```
-Fig. 4. Relative Betweenness Plot. This plot displays the Relative Betweenness Centrality (RBC) of input metabolites, with RBC on the x-axis and corresponding values on the y-axis. It highlights the topological importance and potential regulatory influence of metabolites within the metabolic network.
-```{r display-plots5, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$network_plot)
-```
-Fig. 5. Pathway–Metabolite Network Plot. This plot visualizes the relationships between enriched pathways and input metabolites, highlighting their connectivity and functional associations within the metabolic network. Edges indicate associations between pathways and their corresponding metabolites, while nodes are colored to distinguish pathways from metabolites.
-```{r display-plots6, results='asis', fig.align='center', fig.width=12, fig.height=8}
-print(results$heatmap_plot)
-```
-Fig. 6. Pathway Heatmap. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap uses a gradient of −log10 p-values to indicate the significance of enriched pathways and the involvement of each metabolite within the corresponding pathway.
+# Visualisations
 
-```{r display-plots7, results='asis', fig.align='center', fig.width=15, fig.height=10}
+```{r plot-pathway, fig.width=10, fig.height=7}
+results$pathway_plot
+```
 
+**Figure 1.** Pathway enrichment. Points correspond to pathways; the horizontal
+axis shows $-\log_{10}$ *p*-value from Fisher's exact test. Point
+size reflects the number of overlapping metabolites.
+
+```{r plot-impact, fig.width=10, fig.height=7}
+results$impact_plot
+```
+
+**Figure 2.** Pathway impact. Each pathway is placed by enrichment significance ($-\log_{10}$ p-value) and a topology-based impact score, so pathways that are both statistically supported and structurally central in the network stand out.
+
+```{r plot-gsea, fig.width=10, fig.height=7}
+results$gsea_plot
+```
+
+**Figure 3.** MetSEA (fgsea). Pathways are ranked by enrichment of a
+metabolite list ordered by statistical evidence and effect size.
+
+```{r plot-rbc, fig.width=10, fig.height=7}
+results$rbc_plot
+```
+
+**Figure 4.** Relative betweenness centrality of query metabolites within the
+pathway–metabolite network (topology only).
+
+```{r plot-network, fig.width=10, fig.height=7}
+results$network_plot
+```
+
+**Figure 5.** Pathway–metabolite network for top enriched pathways and their
+overlapping query metabolites.
+
+```{r plot-heatmap, fig.width=10, fig.height=7}
+results$heatmap_plot
+```
+
+**Figure 6.** Pathway Heatmap. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap uses a gradient of −log10 *p*-values to indicate the significance of enriched pathways and the involvement of each metabolite within the corresponding pathway.
+
+```{r plot-membership, fig.width=12, fig.height=8}
 ComplexHeatmap::draw(results$membership_plot)
-
 ```
-Fig. 7. Pathway Membership plot. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap plot illustrates pathway membership by showing each pathway along with its associated metabolites.Only pathways with at least two mapped metabolites are included.
-```{r display-plots8, results='asis', fig.align='center', fig.width=12, fig.height=10}
-print(results$interaction_plot)
+
+**Figure 7.** Pathway Membership plot. Metabolites are displayed on the y-axis and pathways on the x-axis. The heatmap plot illustrates pathway membership by showing each pathway along with its associated metabolites.Only pathways with at least two mapped metabolites are included.
+
+```{r plot-interaction, fig.width=10, fig.height=8}
+results$interaction_plot
 ```
-Fig. 8. Chemical-Chemical Interaction plot. The plot displays metabolite interactions derived from chemical-chemical interaction data obtained from STITCH. Metabolites are shown as nodes whose size scales with degree (the number of direct interaction partners). Edges represent experimentally validated or predicted biochemical relationship; and  edge opacity is mapped to the rescaled STITCH combined score (weight), with darker edges indicating higher-confidence interaction.
 
-### Performing Differential Analysis Prior to Enrichment
+**Figure 8.** Metabolite interaction network based on shared Reactome
+reactions (runtime KEGG–ChEBI–Reactome mapping). Edges indicate co-occurrence
+in the same reaction; node size scales with degree.
 
-If the user intends to perform differential analysis directly from the metabolomics dataset and then run the enrichment analysis, the workflow should begin with the `run_de()` function. This step generates the summary statistics required for enrichment, including p-values, adjusted p-values, and log2 fold changes.
+# Differential analysis followed by enrichment
 
-When using this workflow, the `inputMetabolites` argument in the enrichment function should be set to `NULL` because significant metabolites will be extracted automatically from the differential analysis results.
 
-#### Example Workflow
+For an **end-to-end analysis** that starts from the metabolomics matrix, first run differential analysis with `run_de()`, then pass the result to `enrichmet()` via `da_results`. Significant metabolites are taken from the differential analysis output, so `inputMetabolites` can be left `NULL`.
 
-```{r DE using metabolomics data}
-# Load metabolomics data
-metabolmics_url <- "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
-metabolmics_path <- get_cached_file(metabolmics_url)
-metabolmics_mat <- read.csv(metabolmics_path, row.names = 1, check.names = FALSE)
-head(metabolmics_mat)
+Prepare the abundance matrix in the same format as the example data set `metabolomics_mat`: metabolites as rows, samples as columns, with clear group labels for the contrasts passed to `run_de()`.
 
-# Run differential analysis
+```{r de-workflow, message=TRUE}
+metabolomics_url <-
+    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+metabolomics_path <- get_cached_file(metabolomics_url)
+metabolomics_mat <- read.csv(
+    metabolomics_path,
+    row.names = 1,
+    check.names = FALSE
+)
+
 da_out <- run_de(
-    metabolmics_mat,
+    metabolomics_mat,
     "TK-CMV",
     "K-CMV",
     fc_threshold = 1,
     pval_threshold = 0.05
 )
 
-# Run enrichment analysis using DE results
-results1 <- enrichmet(
+results_da <- enrichmet(
     inputMetabolites = NULL,
     PathwayVsMetabolites = PathwayVsMetabolites,
     da_results = da_out,
     example_data = example_data,
     kegg_lookup = kegg_lookup,
+    reactome_df = reactome_df,
     top_n = 20,
     p_value_cutoff = 1,
-    mapping_df = mapping_df,
-    stitch_df = stitch_df,
     network_top_n = 10,
     heatmap_top_n = 20,
     membership_top_n = 20,
@@ -284,26 +311,26 @@ results1 <- enrichmet(
     min_metabolite_occurrence = 1
 )
 ```
-This workflow allows the user to compute differential statistics directly from the metabolomics dataset and seamlessly feed the results into the enrichmet analysis. It is recommended for users who prefer an end-to-end analysis pipeline within the package.
 
-## Showcasing Analytical Flexibility: Application to Lipidomics
+When `da_results` is supplied, metabolites are by default restricted to those that meet a **statistical significance** threshold (e.g. adjusted *p*-value). Optionally, users can select metabolites of interest using custom **fold-change** and **p-value** cutoffs from the summary statistics, or pass an explicit `inputMetabolites` vector.
 
-The flexibility of the enrichment framework extends beyond metabolomics. We demonstrated this by applying the same workflow to lipidomics data comparing KrasG12D samples with and without TAp73 deletion. For this analysis we selected the top 20 lipids ranked by significance. This example shows that the framework adapts well to different data modalities and can be readily applied to additional measurement types.
+# Application to a lipid pathway map
 
-To facilitate enrichment analysis for lipidomics, a lipid ontology mapping file was generated in the same format as the PathwayVsMetabolites dataset [LION_Lipid_Ontology.csv](https://zenodo.org/api/records/17819145/files/LION_Lipid_Ontology.csv/content). The file was created using data from the LION lipid ontology database [3]."
+The same over-representation interface accepts any pathway–feature table in
+`Pathway` / `Metabolites` format. Lipid ontology content is **not** shipped
+with the package. Users may supply their own map or obtain ontology terms
+under the terms of the LION project or BioPortal. The example below uses a
+minimal illustrative table only.
 
-```{r lipidomics analysis}
-# Creating a toy lipid ontology map
+```{r lipidomics, message=TRUE}
+#Creating a toy lipid ontology map
 
-#ontology_url_lipids <- "https://zenodo.org/api/records/17819145/files/LION_Lipid_Ontology.csv/content"
-#ontology_lipids <- get_cached_file(ontology_url_lipids)
-#pathway_lipids <- read.csv(ontology_lipids)
+#pathway_lipids <- fetch_lion_lipid_ontology()
+
 #head(pathway_lipids)
 
 # Create a lipids list
-#lipids <- c("PA(18:0/16:0)", "PC(O-14:0/18:0)", "PA(22:4(7Z,10Z,13Z,16Z)/18:0)", "Cer(d18:0/24:0)", "SM(d18:0/24:0)", "PS(18:0/16:0)", "TG(14:0/18:3(6Z,9Z,12Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "DG(16:0/16:0/0:0)[rac]", "TG(16:0/18:3(9Z,12Z,15Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "SM(d18:0/24:0)", "PC(O-16:0/20:3(8Z,11Z,14Z))", "PC(10:0/21:0)", "SM(d18:0/24:0)", "PE(18:0/16:0)", "PA(16:0/18:1(11Z))", "SM(d18:0/22:0)", "TG(17:0/17:1(9Z)/18:0)", "PC(20:0/16:0)", "SM(d18:0/22:0)", "PC(O-16:0/18:0)", "PS(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "TG(18:1(9Z)/18:2(9Z,12Z)/18:2(9Z,12Z))", "PE(18:0/16:0)", "SM(d17:1/24:1)", "TG(16:0/16:0/16:0)", "PC(20:0/16:0)", "GlcCer(d18:0/24:0)", "Temnoside B", "TG(18:1(9Z)/18:1(9Z)/18:2(9Z,12Z))", "DG(18:1(9Z)/20:3(8Z,11Z,14Z)/0:0)", "PS(16:0/16:0)", "PG(18:1(9Z)/22:4(7Z,10Z,13Z,16Z))", "TG(18:1(9Z)/18:2(9Z,12Z)/18:3(9Z,12Z,15Z))", "SM(d18:2/22:1)", "PC(O-16:0/18:0)", "PC(13:0/22:2(13Z,16Z))", "PE(20:2(5Z,8Z)/18:0)", "GlcCer(d18:0/24:0)", "TG(12:0/16:0/18:0)", "TG(16:0/18:3(9Z,12Z,15Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "SM(d18:2/24:1)", "DG(18:3(9Z,12Z,15Z)/20:1(11Z)/0:0)", "TG(16:1(9Z)/18:3(9Z,12Z,15Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "PG(18:0/16:0)", "PG(18:0/16:0)", "TG(18:3(9Z,12Z,15Z)/18:3(9Z,12Z,15Z)/20:4(5Z,8Z,11Z,14Z))", "PE(22:1(11Z)/20:4(5Z,8Z,11Z,14Z))", "SM(d18:0/20:0)", "TG(18:3(9Z,12Z,15Z)/18:3(9Z,12Z,15Z)/20:4(5Z,8Z,11Z,14Z))", "PG(16:0/16:0)", "PG(18:0/20:4(5Z,8Z,11Z,14Z))", "DG(18:1(9Z)/18:2(9Z,12Z)/0:0)", "Cer(d18:2/20:0)", "PG(16:0/16:0)", "SM(d17:1/24:1)", "PE(O-20:0/20:5(5Z,8Z,11Z,14Z,17Z))", "PG(18:0/16:0)", "PG(18:0/16:0)", "TG(18:3(9Z,12Z,15Z)/18:3(9Z,12Z,15Z)/20:4(5Z,8Z,11Z,14Z))", "PI(19:0/22:1(11Z))", "PE(22:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "PC(17:0/22:4(7Z,10Z,13Z,16Z))", "SM(d17:1/24:1)", "PG(16:0/18:1(9Z))", "PC(O-20:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "TG(16:1(9Z)/18:2(9Z,12Z)/18:2(9Z,12Z))", "SM(d18:1/19:0)", "PE(O-16:0/22:4(7Z,10Z,13Z,16Z))", "PG(16:0/18:1(9Z))", "TG(18:0/20:4(5Z,8Z,11Z,14Z)/20:5(5Z,8Z,11Z,14Z,17Z))", "PC(22:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "DG(18:1(9Z)/22:4(7Z,10Z,13Z,16Z)/0:0)", "PE(22:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "PS(20:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "PS(22:4(7Z,10Z,13Z,16Z)/18:0)", "PG(18:1(9Z)/22:4(7Z,10Z,13Z,16Z))", "PS(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "Cer(d18:0/22:0)", "TG(16:0/16:0/18:0)", "DG(20:1(11Z)/20:4(5Z,8Z,11Z,14Z)/0:0)", "PC(17:0/18:2(9Z,12Z))", "TG(18:0/18:2(9Z,12Z)/18:2(9Z,12Z))", "TG(16:0/16:0/18:3(9Z,12Z,15Z))")
-
-
+#lipids <- c("PA(18:0/16:0)", "PC(O-14:0/18:0)", "PA(22:4(7Z,10Z,13Z,16Z)/18:0)", "Cer(d18:0/24:0)", "SM(d18:0/24:0)", "PS(18:0/16:0)", "TG(14:0/18:3(6Z,9Z,12Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "DG(16:0/16:0/0:0)[rac]", "TG(16:0/18:3(9Z,12Z,15Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "PC(O-16:0/20:3(8Z,11Z,14Z))", "PC(10:0/21:0)", "PE(18:0/16:0)", "PA(16:0/18:1(11Z))", "SM(d18:0/22:0)", "TG(17:0/17:1(9Z)/18:0)", "PC(20:0/16:0)", "PC(O-16:0/18:0)", "PS(18:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "TG(18:1(9Z)/18:2(9Z,12Z)/18:2(9Z,12Z))", "SM(d17:1/24:1)", "TG(16:0/16:0/16:0)", "GlcCer(d18:0/24:0)", "Temnoside B", "TG(18:1(9Z)/18:1(9Z)/18:2(9Z,12Z))", "DG(18:1(9Z)/20:3(8Z,11Z,14Z)/0:0)", "PS(16:0/16:0)", "PG(18:1(9Z)/22:4(7Z,10Z,13Z,16Z))", "TG(18:1(9Z)/18:2(9Z,12Z)/18:3(9Z,12Z,15Z))", "SM(d18:2/22:1)", "PC(13:0/22:2(13Z,16Z))", "PE(20:2(5Z,8Z)/18:0)", "TG(12:0/16:0/18:0)", "SM(d18:2/24:1)", "DG(18:3(9Z,12Z,15Z)/20:1(11Z)/0:0)", "TG(16:1(9Z)/18:3(9Z,12Z,15Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "PG(18:0/16:0)", "TG(18:3(9Z,12Z,15Z)/18:3(9Z,12Z,15Z)/20:4(5Z,8Z,11Z,14Z))", "PE(22:1(11Z)/20:4(5Z,8Z,11Z,14Z))", "SM(d18:0/20:0)", "PG(16:0/16:0)", "PG(18:0/20:4(5Z,8Z,11Z,14Z))", "DG(18:1(9Z)/18:2(9Z,12Z)/0:0)", "Cer(d18:2/20:0)", "PE(O-20:0/20:5(5Z,8Z,11Z,14Z,17Z))", "PI(19:0/22:1(11Z))", "PE(22:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "PC(17:0/22:4(7Z,10Z,13Z,16Z))", "PG(16:0/18:1(9Z))", "PC(O-20:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z))", "TG(16:1(9Z)/18:2(9Z,12Z)/18:2(9Z,12Z))", "SM(d18:1/19:0)", "PE(O-16:0/22:4(7Z,10Z,13Z,16Z))", "TG(18:0/20:4(5Z,8Z,11Z,14Z)/20:5(5Z,8Z,11Z,14Z,17Z))", "PC(22:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "DG(18:1(9Z)/22:4(7Z,10Z,13Z,16Z)/0:0)", "PS(20:1(11Z)/22:4(7Z,10Z,13Z,16Z))", "PS(22:4(7Z,10Z,13Z,16Z)/18:0)", "TG(16:0/16:0/18:0)", "DG(20:1(11Z)/20:4(5Z,8Z,11Z,14Z)/0:0)", "PC(17:0/18:2(9Z,12Z))", "TG(18:0/18:2(9Z,12Z)/18:2(9Z,12Z))", "TG(16:0/16:0/18:3(9Z,12Z,15Z))")
 # Perform the enrichment test
 #enrichment_results <- perform_enrichment_analysis(lipids, pathway_lipids, p_value_cutoff=0.05)
 
@@ -311,18 +338,17 @@ To facilitate enrichment analysis for lipidomics, a lipid ontology mapping file 
 #create_enrichment_plot(enrichment_results)
 
 ```
-Figure 9. Lipid ontology enrichment analysis displaying pathways ranked by –log₁₀(p-value), calculated using Fisher’s exact test using a toy dataset mimicking lipidomics data.
 
-## References
+# Bibliography
 
-1. Kanehisa, M., Furumichi, M., Sato, Y., Matsuura, Y., & Ishiguro-Watanabe, M. (2025). KEGG: biological systems database as a model of the real world. *Nucleic Acids Research*, 53, D672–D677. [https://www.kegg.jp/](https://www.kegg.jp/)
+1. Kanehisa, M., Furumichi, M., Sato, Y., Matsuura, Y., & Ishiguro-Watanabe, M. (2025). KEGG: biological systems database as a model of the real world. *Nucleic Acids Research*, 53, D672–D677. https://www.kegg.jp/
 
-2. Szklarczyk, D., Santos, A., von Mering, C., Jensen, L. J., Bork, P., & Kuhn, M. (2016). STITCH 5: augmenting protein–chemical interaction networks with tissue and affinity data. *Nucleic Acids Research*, 44(D1), D380–D384. [https://stitch.embl.de/](https://stitch.embl.de/)
+2. Milacic, M., Beavers, D., Conley, P., Gong, C., Gillespie, M., Griss, J., Haw, R., Jassal, B., Matthews, L., May, B., Petryszak, R., Ragueneau, E., Rothfels, K., Sevilla, C., Shamovsky, V., Stephan, R., Tiwari, K., Varusai, T., Weiser, J., Wright, A., Wu, G., Stein, L., Hermjakob, H., & D’Eustachio, P. (2024). The Reactome Pathway Knowledgebase 2024. *Nucleic Acids Research*, 52(D1), D672–D678. https://reactome.org/
 
-3. Molenaar, M.R., et al., LION/web: a web-based ontology enrichment tool for lipidomic data analysis. Gigascience, 2019. 8(6). [http://www.lipidontology.com/](http://www.lipidontology.com/)
+3. Molenaar, M. R., Jeucken, A., Wassenaar, T. A., van de Lest, C. H. A., Brouwers, J. F., & Helms, J. B. (2019). LION/web: a web-based ontology enrichment tool for lipidomic data analysis. *GigaScience*, 8(6), giz061. http://www.lipidontology.com/
 
-```{r session-info, echo=FALSE}
-# reproducibility
+# Session information
+
+```{r session-info}
 sessionInfo()
 ```
-

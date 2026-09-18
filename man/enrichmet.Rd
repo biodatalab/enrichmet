@@ -12,8 +12,7 @@ enrichmet(
   top_n = 100,
   p_value_cutoff = 1,
   kegg_lookup = NULL,
-  mapping_df = NULL,
-  stitch_df = NULL,
+  reactome_df = NULL,
   output_dir = NULL,
   save_excel = FALSE,
   analysis_type = c("enrichment", "gsea", "centrality", "network", "heatmap",
@@ -31,106 +30,114 @@ enrichmet(
   fc_cutoff_up = 1,
   fc_cutoff_down = -1,
   fdr_cutoff_da = 0.05,
-  force_custom_filters = FALSE
+  force_custom_filters = FALSE,
+  backgroundMetabolites = NULL,
+  input_type = c("kegg", "name", "mixed")
 )
 }
 \arguments{
-\item{inputMetabolites}{A character vector of metabolite IDs (KEGG IDs recommended) 
-for which pathway enrichment and centrality analysis are to be performed.
-Can handle complex formats like "C00042|C02170" or "C08356|C00137|C00936".
-Alternatively, can be a data frame from run_de()$kegg_ready containing
-metabolite statistics. Required if da_results is not provided.}
+\item{inputMetabolites}{A character vector of metabolite identifiers and/or names,
+or a data frame from \code{run_de()$kegg_ready}. For \code{input_type = "kegg"}
+(default), values should be KEGG IDs (e.g. \code{"C00031"}); complex forms like
+\code{"C00042|C02170"} are supported when \code{split_complex_ids = TRUE}.
+For \code{input_type = "name"} or \code{"mixed"}, common names (e.g. \code{"glucose"})
+are mapped to KEGG IDs via \code{kegg_lookup}. Required if \code{da_results} is not provided.}
 
-\item{PathwayVsMetabolites}{A data frame containing pathways and their associated 
-metabolites. Must include columns 'Pathway' and 'Metabolites'.}
+\item{PathwayVsMetabolites}{A data frame containing pathways and their associated
+metabolites. Must include columns \code{Pathway} and \code{Metabolites}.}
 
-\item{example_data}{A data frame containing metabolite-level data for GSEA analysis. 
-Should include columns "met_id", "pval", and "log2fc". Required for GSEA analysis.}
+\item{example_data}{A data frame containing metabolite-level data for GSEA analysis.
+Should include columns \code{met_id}, \code{pval}, and \code{log2fc}. Required for GSEA.}
 
-\item{da_results}{Optional output from run_de() function. If provided, 
-inputMetabolites will be extracted from da_results$kegg_ready and used for
-enrichment analysis of significant metabolites. Mutually exclusive with inputMetabolites.}
+\item{da_results}{Optional output from \code{run_de()}. If provided, metabolites are
+taken from \code{da_results$kegg_ready}. Mutually exclusive with prioritising
+\code{inputMetabolites} when both are supplied (da_results wins).}
 
-\item{top_n}{An integer specifying the number of top pathways to include in the 
-pathway enrichment results (default is 100). Use NULL to return all pathways.}
+\item{top_n}{An integer specifying the number of top pathways to include in the
+pathway enrichment results (default is 100). Use \code{NULL} to return all pathways.}
 
-\item{p_value_cutoff}{A numeric value for adjusting the p-value threshold for 
+\item{p_value_cutoff}{A numeric value for the adjusted p-value threshold for
 filtering significant pathways (default is 1, no filtering).}
 
-\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping. Should contain
-columns 'kegg_id' and 'name'.}
+\item{kegg_lookup}{Optional data frame for KEGG ID ↔ name mapping. Must contain
+columns \code{kegg_id} and \code{name}. **Required** when
+\code{input_type} is \code{"name"} or \code{"mixed"} (e.g.
+\code{fetch_kegg_compound_lookup()}).}
 
-\item{mapping_df}{Optional data frame containing the mapping of metabolite IDs 
-(KEGG_ID) to their corresponding STITCH IDs and PubChem CIDs.}
+\item{reactome_df}{Optional data frame containing the KEGG-to-Reactome
+reaction mapping. Must contain columns \code{KEGG} and \code{Reaction}.}
 
-\item{stitch_df}{Optional data frame containing STITCH interaction data, including 
-STITCH IDs and chemical-chemical interaction information downloaded from 
-the STITCH database.}
+\item{output_dir}{Optional directory path for saving output files. If \code{NULL}
+(default), no files are written.}
 
-\item{output_dir}{Optional directory path for saving output files. If NULL (default),
-no files are written.}
+\item{save_excel}{Logical; whether to save results as Excel files (default = FALSE).}
 
-\item{save_excel}{Logical indicating whether to save results as Excel files 
-(default = FALSE).}
+\item{analysis_type}{Character vector specifying which analyses to run. Options:
+\code{"enrichment"}, \code{"gsea"}, \code{"centrality"}, \code{"network"},
+\code{"interaction"}, \code{"heatmap"}, \code{"membership"}. Default: all.}
 
-\item{analysis_type}{Character vector specifying which analyses to run. Options include:
-"enrichment" (pathway enrichment), "gsea" (metabolite set enrichment), 
-"centrality" (network centrality), "network" (pathway-metabolite network),
-"interaction" (chemical interaction network), "heatmap" (enrichment heatmap),
-"membership" (pathway membership matrix). Default: all analyses.}
+\item{run_plots}{Logical; whether to generate visualization plots (default = TRUE).}
 
-\item{run_plots}{Logical indicating whether to generate visualization plots 
-(default = TRUE).}
+\item{network_top_n}{Number of top pathways in the network plot (default = 20).}
 
-\item{network_top_n}{Number of top pathways to include in network visualization (default = 20)}
+\item{heatmap_top_n}{Number of top pathways in the heatmap (default = 20).}
 
-\item{heatmap_top_n}{Number of top pathways to include in heatmap visualization (default = 20)}
+\item{membership_top_n}{Number of top pathways in the membership matrix (default = 20).}
 
-\item{membership_top_n}{Number of top pathways to include in membership matrix (default = 20)}
+\item{min_pathway_occurrence}{Minimum pathway occurrence for heatmap/membership (default = 1).}
 
-\item{min_pathway_occurrence}{Minimum occurrence threshold for pathways in heatmap/membership (default = 1)}
+\item{min_metabolite_occurrence}{Minimum metabolite occurrence for heatmap/membership (default = 1).}
 
-\item{min_metabolite_occurrence}{Minimum occurrence threshold for metabolites in heatmap/membership (default = 1)}
+\item{use_significant_only}{Logical; use only significant metabolites from
+\code{da_results} (default = TRUE). Only applies when \code{da_results} is provided.}
 
-\item{use_significant_only}{Logical indicating whether to use only significant metabolites
-from da_results for enrichment analysis (default = TRUE). Only applies when 
-da_results is provided.}
+\item{split_complex_ids}{Logical; split complex KEGG IDs like \code{"C00042|C02170"}
+into individual IDs (default = TRUE).}
 
-\item{split_complex_ids}{Logical indicating whether to split complex KEGG IDs like 
-"C00042|C02170" into individual metabolites (default = TRUE).}
+\item{significance_threshold}{When using \code{da_results}: \code{"up"}, \code{"down"},
+or \code{"both"} (default: \code{"both"}).}
 
-\item{significance_threshold}{Significance threshold for filtering metabolites when
-using da_results. Options: "up", "down", "both" (default: "both").}
+\item{include_volcano}{Logical; include volcano plot from \code{da_results} (default = TRUE).}
 
-\item{include_volcano}{Logical indicating whether to include volcano plot when 
-da_results is provided (default = TRUE).}
+\item{fc_cutoff_up}{Fold-change cutoff for upregulated metabolites (default = 1).}
 
-\item{fc_cutoff_up}{Fold change cutoff for upregulated metabolites (default = 1, i.e., 2-fold).}
+\item{fc_cutoff_down}{Fold-change cutoff for downregulated metabolites (default = -1).}
 
-\item{fc_cutoff_down}{Fold change cutoff for downregulated metabolites (default = -1, i.e., 0.5-fold).}
+\item{fdr_cutoff_da}{FDR cutoff for DA significance (default = 0.05).}
 
-\item{fdr_cutoff_da}{FDR cutoff for differential analysis significance (default = 0.05).}
+\item{force_custom_filters}{Logical; force custom FC/FDR even if a \code{Significant}
+column exists (default = FALSE).}
 
-\item{force_custom_filters}{Logical indicating whether to force using custom FC and FDR 
-cutoffs even when "Significant" column exists (default = FALSE).}
+\item{backgroundMetabolites}{Optional character vector of KEGG IDs defining the
+statistical background (universe) for background-corrected enrichment.
+If \code{NULL}, the full pathway database is used.}
+
+\item{input_type}{Character; how to interpret \code{inputMetabolites}:
+\itemize{
+  \item \code{"kegg"} (default) – treat entries as KEGG IDs (\code{C#####}).
+  \item \code{"name"} – treat entries as metabolite names and map them to
+        KEGG IDs via \code{kegg_lookup}.
+  \item \code{"mixed"} – keep valid KEGG IDs and map the rest as names.
+}
+Same behaviour as the Shiny app input-type control.}
 }
 \value{
 A list containing results from the specified analyses. Possible components:
 \itemize{
-  \item \code{input_metabolites_used} - Character vector of metabolites used for analysis
-  \item \code{pathway_enrichment_all} - Data frame of all pathway enrichment results
-  \item \code{pathway_enrichment_results} - Data frame of filtered pathway enrichment results
-  \item \code{gsea_results} - Data frame of GSEA analysis results
-  \item \code{metabolite_centrality} - Data frame of centrality analysis results
-  \item \code{volcano_plot} - ggplot object for volcano plot (only when da_results provided)
-  \item \code{pathway_plot} - ggplot object for pathway enrichment visualization
-  \item \code{impact_plot} - ggplot object for impact vs significance
-  \item \code{gsea_plot} - ggplot object for GSEA results
-  \item \code{rbc_plot} - ggplot object for relative betweenness centrality
-  \item \code{network_plot} - ggraph object for metabolite-pathway network
-  \item \code{heatmap_plot} - ComplexHeatmap object for enrichment significance
-  \item \code{membership_plot} - ComplexHeatmap object for pathway membership
-  \item \code{interaction_plot} - ggraph object for chemical interaction network
+  \item \code{input_metabolites_used} – Character vector of KEGG IDs used for analysis
+  \item \code{pathway_enrichment_all} – Data frame of all pathway enrichment results
+  \item \code{pathway_enrichment_results} – Data frame of filtered pathway enrichment results
+  \item \code{gsea_results} – Data frame of GSEA analysis results
+  \item \code{metabolite_centrality} – Data frame of centrality analysis results
+  \item \code{volcano_plot} – ggplot object (only when \code{da_results} provided)
+  \item \code{pathway_plot} – ggplot object for pathway enrichment
+  \item \code{impact_plot} – ggplot object for impact vs significance
+  \item \code{gsea_plot} – ggplot object for GSEA results
+  \item \code{rbc_plot} – ggplot object for relative betweenness centrality
+  \item \code{network_plot} – ggraph object for metabolite–pathway network
+  \item \code{heatmap_plot} – ComplexHeatmap object for enrichment significance
+  \item \code{membership_plot} – ComplexHeatmap object for pathway membership
+  \item \code{interaction_plot} – ggraph object for Reactome interaction network
 }
 }
 \description{
@@ -140,241 +147,58 @@ network centrality analysis, and interaction network visualization. The function
 be run as a complete workflow or using individual analysis steps.
 }
 \details{
+Input can be KEGG compound IDs, metabolite names, or a mix of both (controlled by
+\code{input_type}). Name mapping uses \code{kegg_lookup} (e.g. from
+\code{\link{fetch_kegg_compound_lookup}}) and matches the behaviour of the Shiny app.
+
+
 This function performs comprehensive pathway analysis for metabolomics data.
 Users can run the complete workflow or call individual modular functions for
 specific analyses. See the individual function documentation for more details.
+
+When \code{input_type} is \code{"name"} or \code{"mixed"}, names are matched
+case-insensitively against \code{kegg_lookup$name} (exact, then starts-with,
+then contains). Unmapped entries are dropped with a warning. All downstream
+analyses (including the Reactome interaction network) receive the resulting
+clean KEGG ID vector.
 }
 \examples{
-# Example: Comprehensive enrichment analysis showing all plots
 
-# 1. Create realistic pathway data with real KEGG pathways
-PathwayVsMetabolites <- data.frame(
-  Pathway = c("Glycolysis / Gluconeogenesis",
-              "Citrate cycle (TCA cycle)",
-              "Pentose phosphate pathway",
-              "Pyruvate metabolism",
-              "Amino sugar and nucleotide sugar metabolism",
-              "Butanoate metabolism",
-              "Propanoate metabolism",
-              "Valine, leucine and isoleucine degradation"),
-  Metabolites = c(
-    "C00031,C00022,C00197,C00221,C00631,C01172,C00074,C00186",
-    "C00022,C00036,C00024,C00158,C00149,C00311,C00417,C05125",
-    "C00117,C00257,C00121,C00085,C00118,C00198,C00231,C00279",
-    "C00022,C00024,C00036,C00074,C00122,C00186,C00236,C00267",
-    "C00031,C00095,C00103,C00140,C00159,C00185,C00267,C00645",
-    "C00122,C00149,C00164,C00232,C00356,C00441,C00533,C01074",
-    "C00163,C00179,C00233,C00356,C00408,C00533,C00874,C00979",
-    "C00141,C00183,C00188,C00233,C00322,C00407,C00507,C01048"
-  )
+# Pathway map and compound names (KEGG REST API)
+PathwayVsMetabolites <- fetch_kegg_pathway_metabolites(organism = "hsa")
+kegg_lookup <- fetch_kegg_compound_lookup()
+
+# Summary statistics (Zenodo)
+example_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/summary_stat.csv/content"
+)
+example_data <- read.csv(example_path, stringsAsFactors = FALSE)
+
+# Metabolomics matrix (Zenodo) and differential analysis
+metabolomics_path <- get_cached_file(
+    "https://zenodo.org/api/records/17819145/files/example_data.csv/content"
+)
+metabolomics_mat <- read.csv(
+    metabolomics_path, row.names = 1, check.names = FALSE
+)
+da_out <- run_de(
+    metabolomics_mat, "TK-CMV", "K-CMV",
+    fc_threshold = 1, pval_threshold = 0.05
 )
 
-# 2. Create input metabolites that will show enrichment
-inputMetabolites <- c(
-  "C00031", "C00022", "C00197", "C00221", "C00631", 
-  "C01172", "C00074", "C00186", "C00036", "C00158"
-)
-
-# 3. Create KEGG lookup table for better metabolite names
-kegg_lookup <- data.frame(
-  kegg_id = c(
-    "C00031", "C00022", "C00197", "C00221", "C00631", "C01172",
-    "C00074", "C00186", "C00036", "C00158", "C00024", "C00149",
-    "C00311", "C00117", "C00257", "C00121", "C00085", "C00118"
-  ),
-  name = c(
-    "D-Glucose 6-phosphate", "Oxaloacetate", 
-    "D-Glyceraldehyde 3-phosphate", "D-Glucose", 
-    "Glycerone phosphate", "sn-Glycerol 3-phosphate",
-    "Phosphoenolpyruvate", "3-Phospho-D-glycerate", 
-    "2-Oxoglutarate", "Citrate", "Acetyl-CoA", "Acetoacetyl-CoA",
-    "Isocitrate", "D-Ribulose 5-phosphate", 
-    "Sedoheptulose 7-phosphate", "D-Xylulose 5-phosphate",
-    "D-Glucose 6-phosphate", "D-Fructose 6-phosphate"
-  )
-)
-
-# 4. Create example metabolite statistics for GSEA
-# This data simulates differential expression results
-set.seed(123)
-n_metab <- 50
-example_data <- data.frame(
-  met_id = c(
-    paste0("C", sprintf("\%05d", 1:30)),
-    "C00031", "C00022", "C00197", "C00221", "C00631", 
-    "C01172", "C00074", "C00186", "C00036", "C00158",
-    "C00024", "C00149", "C00311", "C00117", "C00257",
-    "C00121", "C00085", "C00118"
-  ),
-  pval = c(
-    runif(30, 0.001, 0.1),
-    c(0.0001, 0.0005, 0.001, 0.002, 0.003, 0.004, 
-      0.005, 0.006, 0.007, 0.008, 0.01, 0.02, 0.03, 
-      0.04, 0.05, 0.06, 0.07, 0.08)
-  ),
-  log2fc = c(
-    rnorm(30, mean = 0, sd = 0.5),
-    c(2.5, 2.3, 2.1, 1.9, 1.7, 1.5, 1.3, 1.1, 0.9, 0.7,
-      -0.5, -0.7, -0.9, -1.1, -1.3, -1.5, -1.7, -1.9)
-  )
-)
-
-# 5. Create minimal mapping data for STITCH network
-mapping_df <- data.frame(
-  KEGG_ID = c(
-    "C00031", "C00022", "C00197", "C00221", "C00631", 
-    "C01172", "C00074", "C00186", "C00036", "C00158"
-  ),
-  PubChem_CID = c(
-    "439284", "164619", "729", "79025", "751",
-    "753", "1005", "724", "51", "311"
-  ),
-  STITCH_ID = c(
-    "CIDs000439284", "CIDs000164619", "CIDs000000729", 
-    "CIDs000079025", "CIDs000000751", "CIDs000000753",
-    "CIDs000001005", "CIDs000000724", "CIDs000000051", 
-    "CIDs000000311"
-  )
-)
-
-# 6. Create synthetic STITCH interactions
-set.seed(42)
-stitch_combinations <- combn(mapping_df$STITCH_ID, 2)
-stitch_pairs <- data.frame(
-  chemical1 = stitch_combinations[1, ],
-  chemical2 = stitch_combinations[2, ]
-)
-
-# Randomly select 15 interactions
-selected_pairs <- stitch_pairs[sample(nrow(stitch_pairs), 15), ]
-
-stitch_df <- data.frame(
-  chemical1 = selected_pairs$chemical1,
-  chemical2 = selected_pairs$chemical2,
-  similarity = runif(15, 0.6, 0.95),
-  experimental = sample(200:800, 15, replace = TRUE),
-  database = sample(c(0, 300, 600, 900), 15, replace = TRUE),
-  textmining = sample(0:900, 15, replace = TRUE)
-)
-
-stitch_df$combined_score <- with(
-  stitch_df, 
-  similarity * 200 + experimental + database + textmining
-)
-
-# 7. Run comprehensive enrichment analysis with ALL plot types
-
-if (requireNamespace("igraph", quietly = TRUE) &&
-    requireNamespace("ggraph", quietly = TRUE) &&
-    requireNamespace("ComplexHeatmap", quietly = TRUE)) {
-    
-  results <- enrichmet(
-    inputMetabolites = inputMetabolites,
+# Enrichment from DA results (query set taken from da_out)
+results <- enrichmet(
+    inputMetabolites = NULL,
     PathwayVsMetabolites = PathwayVsMetabolites,
+    da_results = da_out,
     example_data = example_data,
     kegg_lookup = kegg_lookup,
-    mapping_df = mapping_df,
-    stitch_df = stitch_df,
+    analysis_type = c("enrichment", "gsea", "centrality"),
     top_n = 10,
-    p_value_cutoff = 1,
-    analysis_type = c(
-      "enrichment", "gsea", "centrality", "network",
-      "heatmap", "membership", "interaction"
-    ),
-    network_top_n = 8,
-    heatmap_top_n = 8,
-    membership_top_n = 8,
-    min_pathway_occurrence = 2,
-    min_metabolite_occurrence = 1
-  )
-  
-  # Print summary
-  cat("=== ENRICHMENT ANALYSIS RESULTS ===\n")
-  cat("Input metabolites used:", 
-      length(results$input_metabolites_used), "\n")
-  cat("Pathways tested:", 
-      nrow(results$pathway_enrichment_all), "\n")
-  cat("Significant pathways (p < 0.05):", 
-      nrow(results$pathway_enrichment_results), "\n")
-  
-  if (!is.null(results$pathway_enrichment_results)) {
-    cat("\n=== TOP 5 ENRICHED PATHWAYS ===\n")
-    print(head(
-      results$pathway_enrichment_results[
-        , c("Pathway", "P_value", "Adjusted_P_value", "Enrichment_Ratio")
-      ], 
-      5
-    ))
-  }
-  
-  if (!is.null(results$gsea_results)) {
-    cat("\n=== TOP 5 GSEA PATHWAYS ===\n")
-    print(head(
-      results$gsea_results[
-        , c("pathway", "pval", "padj", "NES")
-      ], 
-      5
-    ))
-  }
-  
-  if (!is.null(results$metabolite_centrality)) {
-    cat("\n=== TOP 5 CENTRAL METABOLITES ===\n")
-    print(head(
-      results$metabolite_centrality[
-        , c("Display_Name", "RBC_Metabolite")
-      ], 
-      5
-    ))
-  }
-  
-  # Display all available plots
-  cat("\n=== AVAILABLE PLOTS ===\n")
-  available_plots <- names(results)[sapply(results, function(x) {
-    any(class(x) \%in\% c("ggplot", "gg", "ggraph", "Heatmap", "HeatmapList"))
-  })]
-  cat("Plots generated:", paste(available_plots, collapse = ", "), "\n")
-  
-  # Show key plots (if they exist)
-  if (!is.null(results$pathway_plot)) {
-    cat("\nDisplaying pathway enrichment plot...\n")
-    print(results$pathway_plot)
-  }
-  
-  if (!is.null(results$impact_plot)) {
-    cat("\nDisplaying impact plot...\n")
-    print(results$impact_plot)
-  }
-  
-  if (!is.null(results$gsea_plot)) {
-    cat("\nDisplaying GSEA plot...\n")
-    print(results$gsea_plot)
-  }
-  
-  if (!is.null(results$rbc_plot)) {
-    cat("\nDisplaying centrality plot...\n")
-    print(results$rbc_plot)
-  }
+    p_value_cutoff = 1
+)
 
- if (!is.null(results$heatmap_plot)) {
-    cat("\nDisplaying heatmap plot...\n")
-    print(results$heatmap_plot)
-  }
-  
-  if (!is.null(results$membership_plot)) {
-    cat("\nDisplaying membership plot...\n")
-    print(results$membership_plot)
-  }
-  
-  if (!is.null(results$interaction_plot)) {
-    cat("\nDisplaying interaction plot...\n")
-    print(results$interaction_plot)
-  }
-  
-  if (!is.null(results$network_plot)) {
-    cat("\nDisplaying network plot...\n")
-    print(results$network_plot)
-  }
-}
+head(results$pathway_enrichment_results, 3)
 
 }
 \seealso{
@@ -386,5 +210,6 @@ Individual analysis functions:
 \code{\link{create_enrichment_plot}} for pathway visualization,
 \code{\link{create_impact_plot}} for impact vs significance,
 \code{\link{create_gsea_plot}} for GSEA results visualization,
-\code{\link{create_centrality_plot}} for centrality visualization
+\code{\link{create_centrality_plot}} for centrality visualization,
+\code{\link{fetch_kegg_compound_lookup}} for building \code{kegg_lookup}
 }

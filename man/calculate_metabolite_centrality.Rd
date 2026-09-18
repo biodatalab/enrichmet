@@ -14,8 +14,8 @@ metabolites. Must include columns 'Pathway' and 'Metabolites'.}
 A data frame with metabolite names and their relative betweenness centrality scores.
 }
 \description{
-Computes relative betweenness centrality for metabolites based on their 
-co-membership in metabolic pathways.
+Computes the relative betweenness centrality of metabolites derived from
+their co membership within metabolic pathways using the igraph R package.
 }
 \examples{
 # Create example pathway data with valid KEGG metabolite IDs

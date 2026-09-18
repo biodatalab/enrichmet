@@ -2,75 +2,60 @@
 % Please edit documentation in R/create_interaction_plot.R
 \name{create_interaction_plot}
 \alias{create_interaction_plot}
-\title{Create STITCH Interaction Network}
+\title{Create Metabolite Interaction Network (Reactome)}
 \usage{
 create_interaction_plot(
   inputMetabolites,
-  mapping_df,
-  stitch_df,
-  kegg_lookup = NULL
+  reactome_df,
+  kegg_lookup = NULL,
+  min_shared_reactions = 1,
+  max_metabolites_per_reaction = 25
 )
 }
 \arguments{
-\item{inputMetabolites}{A character vector of metabolite IDs.}
+\item{inputMetabolites}{A character vector of metabolite IDs (KEGG IDs).}
 
-\item{mapping_df}{Data frame mapping KEGG IDs to STITCH IDs and PubChem CIDs.}
+\item{reactome_df}{A data frame with the KEGG-to-Reactome reaction
+mapping, e.g. the result of joining a KEGG-ChEBI conversion table
+to Reactome's ChEBI2ReactomeReactions.txt. Must contain columns
+'KEGG' and 'Reaction'. If you want to restrict to a species (e.g.
+"Homo sapiens"), filter reactome_df on 'Species' before calling
+this function.}
 
-\item{stitch_df}{Data frame containing STITCH interaction data.}
+\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.
+Should contain columns 'kegg_id' and 'name'.}
 
-\item{kegg_lookup}{Optional data frame for KEGG ID to name mapping.}
+\item{min_shared_reactions}{Minimum number of shared Reactome reactions
+required for two metabolites to be connected by an edge
+(default 1).}
+
+\item{max_metabolites_per_reaction}{Reactions involving more than this
+many of the input metabolites are skipped when building edges.
+This avoids hairball edges coming from very generic/large
+reactions that touch many unrelated metabolites (default 25).}
 }
 \value{
-A ggraph object showing the chemical interaction network.
+A ggraph object showing the Reactome-based metabolite
+        interaction network, or NULL if insufficient data is available.
 }
 \description{
-Generates a chemical interaction network using STITCH data.
+Generates a metabolite interaction network based on shared Reactome
+reactions. Two metabolites are connected by an edge if they co-occur in
+the same Reactome reaction; edge weight reflects the number of reactions
+they share.
 }
 \examples{
-# Create comprehensive example STITCH data
-set.seed(123)
-inputMetabolites <- c("C00031", "C00022", "C00074", "C00036", "C00103", 
-                     "C00197", "C00186", "C00221", "C00024", "C00042")
-
-mapping_df <- data.frame(
-  KEGG_ID = c("C00031", "C00022", "C00074", "C00036", "C00103", 
-              "C00197", "C00186", "C00221", "C00024", "C00042",
-              "C00122", "C00149", "C00158", "C00117"),
-  STITCH_ID = c("CID00000579", "CID00000607", "CID00000586", "CID00000387",
-                "CID00000534", "CID00000734", "CID00000596", "CID00000551",
-                "CID00000176", "CID00000946", "CID00000330", "CID00001097",
-                "CID00000625", "CID00000867"),
-  PubChem_CID = c(5793, 607, 586, 387, 534, 734, 596, 551, 176, 946, 
-                  330, 1097, 625, 867)
+reactome_df <- data.frame(
+  KEGG = c("C00031", "C00031", "C00022", "C00022", "C00074", "C00074"),
+  ChEBI = c("4167", "4167", "16651", "16651", "16452", "16452"),
+  Reaction = c("R-HSA-1", "R-HSA-2", "R-HSA-1", "R-HSA-3",
+               "R-HSA-2", "R-HSA-3"),
+  Species = "Homo sapiens"
 )
-
-# Create STITCH interaction data
-stitch_df <- data.frame(
-  chemical1 = c("CID00000579", "CID00000579", "CID00000607", "CID00000586",
-                "CID00000387", "CID00000534", "CID00000734", "CID00000596",
-                "CID00000551", "CID00000176", "CID00000946", "CID00000330",
-                "CID00001097", "CID00000625", "CID00000867"),
-  chemical2 = c("CID00000534", "CID00000734", "CID00000586", "CID00000387",
-                "CID00000551", "CID00000946", "CID00000596", "CID00000176",
-                "CID00000330", "CID00001097", "CID00000625", "CID00000867",
-                "CID00000579", "CID00000607", "CID00000534"),
-  combined_score = c(850, 720, 680, 790, 810, 730, 690, 760, 820, 710,
-                     750, 780, 670, 740, 710)
+plot <- create_interaction_plot(
+  inputMetabolites = c("C00031", "C00022", "C00074"),
+  reactome_df = reactome_df
 )
-
-kegg_lookup <- data.frame(
-  kegg_id = c("C00031", "C00022", "C00074", "C00036", "C00103", 
-              "C00197", "C00186", "C00221", "C00024", "C00042",
-              "C00122", "C00149", "C00158", "C00117"),
-  name = c("D-Glucose", "L-Lactate", "Oxaloacetate", "Citrate", 
-           "D-Fructose 6-phosphate", "3-Phospho-D-glyceroyl phosphate",
-           "L-Aspartate", "Oxoglutaric acid", "Acetyl-CoA", 
-           "Oxaloacetic acid", "L-Glutamate", "Succinyl-CoA",
-           "L-Malate", "D-Ribose 5-phosphate")
-)
-
-# Create interaction network plot
-plot <- create_interaction_plot(inputMetabolites, mapping_df, stitch_df, kegg_lookup)
 plot
 
 }
