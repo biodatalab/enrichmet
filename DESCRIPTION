@@ -1,53 +1,59 @@
 Package: enrichmet
 Type: Package
 Title: enrichmet: R package for Quick and Easy Pathway and Network Analyses in Metabolomics
-Version: 0.99.15
-Authors@R: 
+Version: 0.99.16
+Authors@R:
     c(
-        person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7430-9428")),
-        person(given="H. Lee Moffitt Cancer Center & Research Institute",
-        role = "fnd",
-        comment = "Grant number: P01CA250984")
+        person("Yonatan", "Mekonnen", email = "yaayalew@gmail.com",
+            role = c("aut", "cre"),
+            comment = c(ORCID = "0000-0002-7430-9428")),
+        person(given = "H. Lee Moffitt Cancer Center & Research Institute",
+            role = "fnd",
+            comment = "Grant number: P01CA250984")
     )
-Description: Provides functions to perform metabolite-based pathway enrichment 
-    analysis using Fisher’s exact test and MetSEA. Computes relative betweenness 
-    centrality (RBC) of input metabolites in a pathway-metabolite interaction network. 
-    The package generates visualizations including pathway dot plots, MetSEA plots, 
-    metabolite centrality plots, and network plots. It supports KEGG-based pathway inputs and 
+Description: Provides functions to perform metabolite-based pathway enrichment
+    analysis using Fisher's exact test and MetSEA. Computes relative betweenness
+    centrality (RBC) of input metabolites in a pathway-metabolite interaction network.
+    The package generates visualizations including pathway dot plots, MetSEA plots,
+    metabolite centrality plots, and network plots. It supports KEGG-based pathway inputs and
     generates exportable results.
 License: AGPL-3 + file LICENSE
 Encoding: UTF-8
-LazyData: false
-URL: https://github.com/biodatalab/enrichmet/issues
-BugReports: https://github.com/biodatalab/enrichmet
-SystemRequirements: chron
+URL: https://github.com/biodatalab/enrichmet
+BugReports: https://github.com/biodatalab/enrichmet/issues
+Depends:
+    R (>= 4.6.0)
 Imports:
+    BiocFileCache,
+    circlize,
+    ComplexHeatmap,
+    curl,
+    data.table,
     dplyr,
-    openxlsx,
-    rlang,
-    tidyr,
-    igraph,
-    ggplot2,
     fgsea,
-    stringr,
+    ggplot2,
     ggraph,
     ggrepel,
-    ComplexHeatmap,
-    circlize,
-    scales,
-    tibble,
-    qvalue,
+    igraph,
     limma,
-    KEGGREST
-Suggests: 
+    openxlsx,
+    qvalue,
+    rlang,
+    scales,
+    stats,
+    stringr,
+    tibble,
+    tidyr,
+    utils
+Suggests:
     knitr,
     readr,
     readxl,
-    BiocFileCache,
     httr,
     magick,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.2.0),
+    withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization

@@ -1,70 +1,109 @@
-# R/fetch_kegg_data.R
-# Internal shared cache
-.enrichmet_bfc <- function() {
-    
-    BiocFileCache::BiocFileCache(
-        cache = tools::R_user_dir(
-            "enrichmet",
-            which = "cache"
-        ),
-        ask = FALSE
-    )
+# Internal: package-specific cache directory, with a tempdir fallback
+.enrichmet_cache_dir <- function() {
+    dir <- tools::R_user_dir("enrichmet", which = "cache")
+    ok <- tryCatch({
+        dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+        file.access(dir, 2) == 0
+    }, error = function(e) FALSE)
+    if (!isTRUE(ok)) {
+        dir <- file.path(tempdir(), "enrichmet_cache")
+    }
+    dir
 }
 
 #' Download and cache a remote file
 #'
 #' Downloads a remote resource and stores it in the EnrichMet cache.
-#' Existing cached resources are reused automatically.
+#' Existing cached resources are reused automatically. Failed downloads
+#' are retried, and a plain download is used if the cache fails.
 #'
 #' @param url Character. URL of the remote file.
+#' @param retries Integer. Number of download attempts. Default is 3.
 #'
 #' @return Character path to the cached file.
 #'
+#' @examples
+#' \donttest{
+#' if (curl::has_internet()) {
+#'     f <- get_cached_file("https://rest.kegg.jp/list/pathway/hsa")
+#'     head(readLines(f))
+#' }
+#' }
+#'
 #' @export
-get_cached_file <- function(url) {
+get_cached_file <- function(url, retries = 3L) {
     if (!is.character(url) || length(url) != 1 ||
         is.na(url) || url == "") {
         stop("url must be a single non-empty character string.",
              call. = FALSE)
     }
     
-    bfc <- .enrichmet_bfc()
+    old <- options(timeout = max(300, getOption("timeout")))
+    on.exit(options(old), add = TRUE)
     
-    # 1. Reuse an existing cache entry if it is still valid
-    cached <- BiocFileCache::bfcquery(bfc, query = url, field = "rname")
-    if (nrow(cached) > 0) {
-        path <- tryCatch(
-            BiocFileCache::bfcrpath(bfc, rids = cached$rid[1]),
-            error = function(e) NULL
-        )
-        if (length(path) > 0 && file.exists(path[1])) {
-            return(path[1])
-        }
-    }
-    
-    # 2. Download and add to the cache
-    rid <- tryCatch(
-        BiocFileCache::bfcadd(
-            bfc,
-            rname = url,
-            fpath = url,
-            download = TRUE,
-            rtype = "web"
+    bfc <- tryCatch(
+        BiocFileCache::BiocFileCache(
+            cache = .enrichmet_cache_dir(), ask = FALSE
         ),
-        error = function(e) {
-            stop("Failed to download resource: ", url, "\n",
-                 conditionMessage(e), call. = FALSE)
-        }
+        error = function(e) NULL
     )
     
-    # 3. Retrieve the cached path
-    path <- BiocFileCache::bfcrpath(bfc, rids = rid)
-    if (length(path) == 0 || !file.exists(path[1])) {
-        stop("Failed to download and cache resource: ", url,
-             call. = FALSE)
+    # 1. Reuse a valid cache entry; drop stale ones (file missing)
+    if (!is.null(bfc)) {
+        cached <- BiocFileCache::bfcquery(
+            bfc, query = url, field = "rname", exact = TRUE
+        )
+        for (rid in cached$rid) {
+            path <- tryCatch(
+                BiocFileCache::bfcrpath(bfc, rids = rid),
+                error = function(e) NULL
+            )
+            if (length(path) > 0 && file.exists(path[1])) {
+                return(unname(path[1]))
+            }
+        }
+        if (nrow(cached) > 0) {
+            tryCatch(
+                BiocFileCache::bfcremove(bfc, cached$rid),
+                error = function(e) NULL
+            )
+        }
     }
     
-    path[1]
+    # 2. Download, with retries
+    for (i in seq_len(retries)) {
+        if (!is.null(bfc)) {
+            # bfcadd() returns the cached file path, named by the rid
+            path <- tryCatch(
+                BiocFileCache::bfcadd(
+                    bfc, rname = url, fpath = url,
+                    download = TRUE, rtype = "web"
+                ),
+                error = function(e) NULL
+            )
+            if (length(path) > 0 && file.exists(path[1])) {
+                return(unname(path[1]))
+            }
+        }
+        
+        tmp <- tempfile()
+        status <- tryCatch(
+            utils::download.file(url, tmp, mode = "wb", quiet = TRUE),
+            error = function(e) 1L,
+            warning = function(w) 1L
+        )
+        if (identical(status, 0L) && file.exists(tmp) &&
+            file.size(tmp) > 0) {
+            return(tmp)
+        }
+        
+        if (i < retries) {
+            Sys.sleep(2^(i - 1))
+        }
+    }
+    
+    stop("Failed to download resource after ", retries,
+         " attempts: ", url, call. = FALSE)
 }
 #' Fetch KEGG compound names
 #'

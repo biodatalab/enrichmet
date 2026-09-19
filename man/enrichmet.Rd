@@ -59,7 +59,7 @@ pathway enrichment results (default is 100). Use \code{NULL} to return all pathw
 \item{p_value_cutoff}{A numeric value for the adjusted p-value threshold for
 filtering significant pathways (default is 1, no filtering).}
 
-\item{kegg_lookup}{Optional data frame for KEGG ID ↔ name mapping. Must contain
+\item{kegg_lookup}{Optional data frame for KEGG ID name mapping. Must contain
 columns \code{kegg_id} and \code{name}. **Required** when
 \code{input_type} is \code{"name"} or \code{"mixed"} (e.g.
 \code{fetch_kegg_compound_lookup()}).}
@@ -114,30 +114,30 @@ If \code{NULL}, the full pathway database is used.}
 
 \item{input_type}{Character; how to interpret \code{inputMetabolites}:
 \itemize{
-  \item \code{"kegg"} (default) – treat entries as KEGG IDs (\code{C#####}).
-  \item \code{"name"} – treat entries as metabolite names and map them to
+  \item \code{"kegg"} (default) treat entries as KEGG IDs (\code{C#####}).
+  \item \code{"name"} treat entries as metabolite names and map them to
         KEGG IDs via \code{kegg_lookup}.
-  \item \code{"mixed"} – keep valid KEGG IDs and map the rest as names.
+  \item \code{"mixed"} keep valid KEGG IDs and map the rest as names.
 }
 Same behaviour as the Shiny app input-type control.}
 }
 \value{
 A list containing results from the specified analyses. Possible components:
 \itemize{
-  \item \code{input_metabolites_used} – Character vector of KEGG IDs used for analysis
-  \item \code{pathway_enrichment_all} – Data frame of all pathway enrichment results
-  \item \code{pathway_enrichment_results} – Data frame of filtered pathway enrichment results
-  \item \code{gsea_results} – Data frame of GSEA analysis results
-  \item \code{metabolite_centrality} – Data frame of centrality analysis results
-  \item \code{volcano_plot} – ggplot object (only when \code{da_results} provided)
-  \item \code{pathway_plot} – ggplot object for pathway enrichment
-  \item \code{impact_plot} – ggplot object for impact vs significance
-  \item \code{gsea_plot} – ggplot object for GSEA results
-  \item \code{rbc_plot} – ggplot object for relative betweenness centrality
-  \item \code{network_plot} – ggraph object for metabolite–pathway network
-  \item \code{heatmap_plot} – ComplexHeatmap object for enrichment significance
-  \item \code{membership_plot} – ComplexHeatmap object for pathway membership
-  \item \code{interaction_plot} – ggraph object for Reactome interaction network
+  \item \code{input_metabolites_used} Character vector of KEGG IDs used for analysis
+  \item \code{pathway_enrichment_all} Data frame of all pathway enrichment results
+  \item \code{pathway_enrichment_results} Data frame of filtered pathway enrichment results
+  \item \code{gsea_results} Data frame of GSEA analysis results
+  \item \code{metabolite_centrality} Data frame of centrality analysis results
+  \item \code{volcano_plot} ggplot object (only when \code{da_results} provided)
+  \item \code{pathway_plot} ggplot object for pathway enrichment
+  \item \code{impact_plot} ggplot object for impact vs significance
+  \item \code{gsea_plot} ggplot object for GSEA results
+  \item \code{rbc_plot} ggplot object for relative betweenness centrality
+  \item \code{network_plot} ggraph object for metabolite pathway network
+  \item \code{heatmap_plot} ComplexHeatmap object for enrichment significance
+  \item \code{membership_plot} ComplexHeatmap object for pathway membership
+  \item \code{interaction_plot} ggraph object for Reactome interaction network
 }
 }
 \description{
@@ -189,6 +189,18 @@ da_out <- run_de(
     metabolomics_mat, "TK-CMV", "K-CMV",
     fc_threshold = 1, pval_threshold = 0.05
 )
+
+example_path <- system.file(
+    "extdata", "summary_stat.csv",
+    package = "enrichmet"
+)
+
+if (example_path == "") {
+    stop("Example file 'summary_stat.csv' not found in inst/extdata/")
+}
+
+example_data <- read.csv(example_path, stringsAsFactors = FALSE)
+
 
 # Enrichment from DA results (query set taken from da_out)
 results <- enrichmet(

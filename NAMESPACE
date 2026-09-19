@@ -19,7 +19,6 @@ export(fetch_kegg_reactome)
 export(fetch_lion_lipid_ontology)
 export(fetch_reactome_reactions)
 export(get_cached_file)
-export(load_example_data)
 export(perform_enrichment_analysis)
 export(perform_enrichment_analysis_bg)
 export(perform_gsea_analysis)
@@ -95,6 +94,7 @@ importFrom(limma,
 )
 importFrom(scales,rescale)
 importFrom(stats,
+  aggregate,
   fisher.test,
   p.adjust,
   reorder
@@ -110,5 +110,6 @@ importFrom(tidyr,
 )
 importFrom(utils,
   combn,
-  head
+  head,
+  read.delim
 )

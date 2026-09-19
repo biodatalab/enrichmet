@@ -4,15 +4,27 @@
 \alias{get_cached_file}
 \title{Download and cache a remote file}
 \usage{
-get_cached_file(url)
+get_cached_file(url, retries = 3L)
 }
 \arguments{
 \item{url}{Character. URL of the remote file.}
+
+\item{retries}{Integer. Number of download attempts. Default is 3.}
 }
 \value{
 Character path to the cached file.
 }
 \description{
 Downloads a remote resource and stores it in the EnrichMet cache.
-Existing cached resources are reused automatically.
+Existing cached resources are reused automatically. Failed downloads
+are retried, and a plain download is used if the cache fails.
+}
+\examples{
+\donttest{
+if (curl::has_internet()) {
+    f <- get_cached_file("https://rest.kegg.jp/list/pathway/hsa")
+    head(readLines(f))
+}
+}
+
 }
