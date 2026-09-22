@@ -4,7 +4,11 @@
 \alias{fetch_kegg_pathway_metabolites}
 \title{Fetch KEGG pathway-metabolite relationships}
 \usage{
-fetch_kegg_pathway_metabolites(organism = "hsa", clean_pathway_names = TRUE)
+fetch_kegg_pathway_metabolites(
+  organism = "hsa",
+  clean_pathway_names = TRUE,
+  exclude_global_overview = TRUE
+)
 }
 \arguments{
 \item{organism}{Character. KEGG organism code. Default is \code{"hsa"}.}
