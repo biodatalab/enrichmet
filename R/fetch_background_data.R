@@ -214,36 +214,22 @@ fetch_kegg_compound_lookup <- function(
 fetch_kegg_pathway_metabolites <- function(
         organism = "hsa",
         clean_pathway_names = TRUE,
-        exclude_global_overview = TRUE
+        metaboanalyst_style = TRUE
 ) {
     
-    if (!is.character(organism) ||
-        length(organism) != 1 ||
-        is.na(organism) ||
-        organism == "") {
-        
-        stop(
-            "organism must be a single non-empty character string.",
-            call. = FALSE
-        )
+    if (!is.character(organism) || length(organism) != 1 ||
+        is.na(organism) || organism == "") {
+        stop("organism must be a single non-empty character string.", call. = FALSE)
     }
     
-    pathway_url <- paste0(
-        "https://rest.kegg.jp/list/pathway/",
-        organism
-    )
-    
-    link_url <- "https://rest.kegg.jp/link/pathway/compound"
+    pathway_url <- paste0("https://rest.kegg.jp/list/pathway/", organism)
+    link_url    <- "https://rest.kegg.jp/link/pathway/compound"
     
     pathway_file <- get_cached_file(pathway_url)
     link_file    <- get_cached_file(link_url)
     
-    pathway_data <- read.delim(
-        pathway_file,
-        header = FALSE,
-        sep = "\t",
-        stringsAsFactors = FALSE
-    )
+    pathway_data <- read.delim(pathway_file, header = FALSE, sep = "\t",
+                               stringsAsFactors = FALSE)
     
     if (ncol(pathway_data) < 2) {
         stop("Unexpected KEGG pathway file format.", call. = FALSE)
@@ -251,60 +237,45 @@ fetch_kegg_pathway_metabolites <- function(
     
     pathway_data <- pathway_data[, 1:2, drop = FALSE]
     colnames(pathway_data) <- c("PathwayID", "Pathway")
-    
     pathway_data$PathwayID <- sub("^path:", "", pathway_data$PathwayID)
     
     # -------------------------------------------------------
-    # Exclude Global and overview maps (MetaboAnalyst-style)
-    # KEGG categories:
-    #   011xx  = Global maps
-    #   012xx  = Overview maps
+    # MetaboAnalyst-style curation
     # -------------------------------------------------------
-    if (isTRUE(exclude_global_overview)) {
+    if (isTRUE(metaboanalyst_style)) {
         
-        # Extract the numeric part of the pathway ID
-        # e.g. "hsa01100" → 1100, "hsa00010" → 10
         pathway_num <- as.integer(
             sub(paste0("^", organism), "", pathway_data$PathwayID)
         )
         
-        keep <- !(pathway_num >= 1100 & pathway_num < 1300)
+        # Keep only metabolic pathways (numeric ID < 2000)
+        # and exclude Global (011xx) + Overview (012xx) maps
+        keep <- pathway_num < 2000 &
+            !(pathway_num >= 1100 & pathway_num < 1300)
         
         n_excluded <- sum(!keep)
         pathway_data <- pathway_data[keep, , drop = FALSE]
         
         message(
-            "Excluded ", n_excluded,
-            " Global/overview maps (011xx & 012xx). ",
-            "Remaining pathways: ", nrow(pathway_data)
+            "MetaboAnalyst-style filter applied: ",
+            "excluded ", n_excluded, " pathways. ",
+            "Remaining: ", nrow(pathway_data),
+            " (MetaboAnalyst human library ≈ 80)"
         )
     }
     
     if (clean_pathway_names) {
-        
         pathway_data$Pathway <- sub("^.*?:", "", pathway_data$Pathway)
-        
-        pathway_data$Pathway <- sub(
-            " - [^-]+ \\([^)]*\\)$",
-            "",
-            pathway_data$Pathway
-        )
-        
+        pathway_data$Pathway <- sub(" - [^-]+ \\([^)]*\\)$", "", pathway_data$Pathway)
         pathway_data$Pathway <- trimws(pathway_data$Pathway)
     }
     
     pathway_data$PathwayID_map <- sub(
-        paste0("^", organism),
-        "map",
-        pathway_data$PathwayID
+        paste0("^", organism), "map", pathway_data$PathwayID
     )
     
-    link_data <- read.delim(
-        link_file,
-        header = FALSE,
-        sep = "\t",
-        stringsAsFactors = FALSE
-    )
+    link_data <- read.delim(link_file, header = FALSE, sep = "\t",
+                            stringsAsFactors = FALSE)
     
     if (ncol(link_data) < 2) {
         stop("Unexpected KEGG pathway-compound link file format.", call. = FALSE)
@@ -312,9 +283,8 @@ fetch_kegg_pathway_metabolites <- function(
     
     link_data <- link_data[, 1:2, drop = FALSE]
     colnames(link_data) <- c("Metabolite", "PathwayID_map")
-    
-    link_data$Metabolite     <- sub("^cpd:", "", link_data$Metabolite)
-    link_data$PathwayID_map  <- sub("^path:", "", link_data$PathwayID_map)
+    link_data$Metabolite    <- sub("^cpd:", "", link_data$Metabolite)
+    link_data$PathwayID_map <- sub("^path:", "", link_data$PathwayID_map)
     
     merged_data <- merge(
         pathway_data[, c("PathwayID", "Pathway", "PathwayID_map"), drop = FALSE],
@@ -323,11 +293,8 @@ fetch_kegg_pathway_metabolites <- function(
     )
     
     if (nrow(merged_data) == 0) {
-        stop(
-            "No KEGG pathway-metabolite relationships were found for organism '",
-            organism, "'.",
-            call. = FALSE
-        )
+        stop("No KEGG pathway-metabolite relationships found for '", organism, "'.",
+             call. = FALSE)
     }
     
     result <- aggregate(
@@ -337,7 +304,6 @@ fetch_kegg_pathway_metabolites <- function(
     )
     
     colnames(result)[colnames(result) == "Metabolite"] <- "Metabolites"
-    
     result <- result[, c("PathwayID", "Pathway", "Metabolites"), drop = FALSE]
     rownames(result) <- NULL
     

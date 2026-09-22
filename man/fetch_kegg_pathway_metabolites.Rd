@@ -7,7 +7,7 @@
 fetch_kegg_pathway_metabolites(
   organism = "hsa",
   clean_pathway_names = TRUE,
-  exclude_global_overview = TRUE
+  metaboanalyst_style = TRUE
 )
 }
 \arguments{

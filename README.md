@@ -145,7 +145,7 @@ cat("Input metabolites used:",
 #> Input metabolites used: 10
 cat("Pathways tested:",
     nrow(results$pathway_enrichment_all), "\n")
-#> Pathways tested: 58
+#> Pathways tested: 32
 cat("Pathways reported (p <= cutoff):",
     nrow(results$pathway_enrichment_results), "\n")
 #> Pathways reported (p <= cutoff): 10
@@ -159,18 +159,18 @@ print(head(
   ],
   5
 ))
-#>                               Pathway      P_value Adjusted_P_value
-#> 1          Glucagon signaling pathway 1.013715e-20     5.879546e-19
-#> 2        Glycolysis / Gluconeogenesis 6.534351e-20     1.894962e-18
-#> 3 Central carbon metabolism in cancer 2.917116e-16     5.639758e-15
-#> 4                   Carbon metabolism 4.337350e-12     6.289157e-11
-#> 5           Pentose phosphate pathway 3.189820e-11     3.700192e-10
+#>                                   Pathway      P_value Adjusted_P_value
+#> 1            Glycolysis / Gluconeogenesis 4.255581e-18     1.361786e-16
+#> 2               Pentose phosphate pathway 5.097011e-10     8.155218e-09
+#> 3               Citrate cycle (TCA cycle) 3.118016e-07     3.325883e-06
+#> 4 Glyoxylate and dicarboxylate metabolism 1.186700e-06     9.493600e-06
+#> 5                     Pyruvate metabolism 2.269274e-06     1.452335e-05
 #>   Enrichment_Ratio
-#> 1        162.76154
-#> 2        136.50968
-#> 3        101.66486
-#> 4         32.70957
-#> 5         76.24865
+#> 1         85.84839
+#> 2         47.95135
+#> 3         59.14000
+#> 4         22.06716
+#> 5         36.96250
 
 cat("\n=== TOP 5 GSEA PATHWAYS ===\n")
 #> 
@@ -181,13 +181,13 @@ print(head(
   ],
   5
 ))
-#>                             pathway         pval       padj       NES
-#>                              <char>        <num>      <num>     <num>
-#> 1: Protein digestion and absorption 0.0002700371 0.01275013 -2.005914
-#> 2:               Mineral absorption 0.0003806009 0.01275013 -1.884813
-#> 3:      Aminoacyl-tRNA biosynthesis 0.0008066297 0.01801473 -1.869135
-#> 4:      Biosynthesis of amino acids 0.0018510329 0.03100480 -1.782122
-#> 5:        Biosynthesis of cofactors 0.0191946858 0.19686761 -1.552706
+#>                                     pathway        pval       padj       NES
+#>                                      <char>       <num>      <num>     <num>
+#> 1:              Aminoacyl-tRNA biosynthesis 0.001410825 0.05643299 -1.842174
+#> 2:                  D-Amino acid metabolism 0.025571358 0.31692134 -1.581063
+#> 3:       Cysteine and methionine metabolism 0.043918919 0.31692134 -1.498602
+#> 4:                        Sulfur metabolism 0.046995943 0.31692134 -1.512077
+#> 5: Glycine, serine and threonine metabolism 0.056027165 0.31692134 -1.487887
 
 cat("\n=== TOP 5 CENTRAL METABOLITES ===\n")
 #> 
@@ -198,12 +198,12 @@ print(head(
   ],
   5
 ))
-#>          Display_Name RBC_Metabolite
-#> 1           D-Glucose   0.0078427493
-#> 2            Pyruvate   0.0050064226
-#> 3 Phosphoenolpyruvate   0.0008309704
-#> 4        Oxaloacetate   0.0007228431
-#> 5             Citrate   0.0005223189
+#>            Display_Name RBC_Metabolite
+#> 1              Pyruvate    0.146248573
+#> 2             D-Glucose    0.012043081
+#> 3 3-Phospho-D-glycerate    0.006211640
+#> 4 2-Phospho-D-glycerate    0.003563570
+#> 5   Phosphoenolpyruvate    0.002932993
 
 # Display available plots
 cat("\n=== AVAILABLE PLOTS ===\n")
