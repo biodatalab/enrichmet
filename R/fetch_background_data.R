@@ -257,10 +257,9 @@ fetch_kegg_pathway_metabolites <- function(
         pathway_data <- pathway_data[keep, , drop = FALSE]
         
         message(
-            "MetaboAnalyst-style filter applied: ",
+            "Filter applied: ",
             "excluded ", n_excluded, " pathways. ",
-            "Remaining: ", nrow(pathway_data),
-            " (MetaboAnalyst human library ≈ 80)"
+            "Remaining: ", nrow(pathway_data)
         )
     }
     
