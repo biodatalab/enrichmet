@@ -58,3 +58,4 @@ Config/testthat/edition: 3
 VignetteBuilder: knitr
 biocViews: Metabolomics, Pathways, Network, NetworkEnrichment, KEGG, Visualization
 Config/roxygen2/version: 8.1.0
+
