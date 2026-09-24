@@ -240,7 +240,7 @@ fetch_kegg_pathway_metabolites <- function(
     pathway_data$PathwayID <- sub("^path:", "", pathway_data$PathwayID)
     
     # -------------------------------------------------------
-    # MetaboAnalyst-style curation
+    # Curation
     # -------------------------------------------------------
     if (isTRUE(metaboanalyst_style)) {
         
