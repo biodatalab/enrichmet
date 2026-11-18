@@ -28,14 +28,14 @@
 #' }
 #'
 #' example_data <- read.csv(example_path, stringsAsFactors = FALSE)
-#' measured <- extract_measured_kegg_ids(example_data)
+#' measured <- background_correction(example_data)
 #' length(measured)
 #' head(measured)
 #' 
 #'
 #'
 #' @export
-extract_measured_kegg_ids <- function(summary_stats) {
+background_correction <- function(summary_stats) {
     if (!is.data.frame(summary_stats) || !"met_id" %in% colnames(summary_stats)) {
         stop("summary_stats must be a data frame with a 'met_id' column")
     }
@@ -67,7 +67,7 @@ extract_measured_kegg_ids <- function(summary_stats) {
 #' @param backgroundMetabolites Optional character vector defining the
 #'   statistical universe. If \code{NULL}, all metabolites in
 #'   \code{PathwayVsMetabolites} are used. If supplied (e.g. from
-#'   \code{\link{extract_measured_kegg_ids}}), the universe and each pathway's
+#'   \code{\link{background_correction}}), the universe and each pathway's
 #'   membership are intersected with this set before testing.
 #'
 #' @return A data frame of enrichment results (p-values, impact, coverage, etc.).
@@ -82,7 +82,7 @@ extract_measured_kegg_ids <- function(summary_stats) {
 #' @importFrom stats fisher.test p.adjust
 #' @importFrom utils head
 #'
-#' @seealso \code{\link{extract_measured_kegg_ids}},
+#' @seealso \code{\link{background_correction}},
 #'   \code{\link{fetch_kegg_pathway_metabolites}}
 #'
 #' @examples
@@ -115,7 +115,7 @@ extract_measured_kegg_ids <- function(summary_stats) {
 #' }
 #'
 #' example_data <- read.csv(example_path, stringsAsFactors = FALSE)
-#' measured <- extract_measured_kegg_ids(example_data)
+#' measured <- background_correction(example_data)
 #'
 #' metabolomics_path <- system.file(
 #'     "extdata", "example_data.csv",

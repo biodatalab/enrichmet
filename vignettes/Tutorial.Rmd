@@ -187,7 +187,7 @@ Fisher's exact test can be restricted to metabolites that were measured
 never observed.
 
 ```{r background, message=TRUE}
-measured_background <- extract_measured_kegg_ids(example_data)
+measured_background <- background_correction(example_data)
 
 results_bg <- enrichmet(
     inputMetabolites = inputMetabolites,

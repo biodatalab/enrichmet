@@ -26,7 +26,7 @@ perform_enrichment_analysis_bg(
 \item{backgroundMetabolites}{Optional character vector defining the
 statistical universe. If \code{NULL}, all metabolites in
 \code{PathwayVsMetabolites} are used. If supplied (e.g. from
-\code{\link{extract_measured_kegg_ids}}), the universe and each pathway's
+\code{\link{background_correction}}), the universe and each pathway's
 membership are intersected with this set before testing.}
 }
 \value{
@@ -71,7 +71,7 @@ if (example_path == "") {
 }
 
 example_data <- read.csv(example_path, stringsAsFactors = FALSE)
-measured <- extract_measured_kegg_ids(example_data)
+measured <- background_correction(example_data)
 
 metabolomics_path <- system.file(
     "extdata", "example_data.csv",
@@ -117,6 +117,6 @@ head(enr_bg[, c("Pathway", "P_value", "Adjusted_P_value")], 3)
 
 }
 \seealso{
-\code{\link{extract_measured_kegg_ids}},
+\code{\link{background_correction}},
   \code{\link{fetch_kegg_pathway_metabolites}}
 }
