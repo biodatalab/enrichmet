@@ -181,13 +181,20 @@ print(head(
   ],
   5
 ))
-#>                                     pathway        pval       padj       NES
-#>                                      <char>       <num>      <num>     <num>
-#> 1:              Aminoacyl-tRNA biosynthesis 0.001410825 0.05643299 -1.842174
-#> 2:                  D-Amino acid metabolism 0.025571358 0.31692134 -1.581063
-#> 3:       Cysteine and methionine metabolism 0.043918919 0.31692134 -1.498602
-#> 4:                        Sulfur metabolism 0.046995943 0.31692134 -1.512077
-#> 5: Glycine, serine and threonine metabolism 0.056027165 0.31692134 -1.487887
+#>                                                pathway         pval       padj
+#>                                                 <char>        <num>      <num>
+#> 1:                         Aminoacyl-tRNA biosynthesis 0.0009971623 0.03988649
+#> 2:                             D-Amino acid metabolism 0.0198374685 0.27100271
+#> 3:                                   Sulfur metabolism 0.0279986607 0.27100271
+#> 4: Phenylalanine, tyrosine and tryptophan biosynthesis 0.0314911299 0.27100271
+#> 5:                  Cysteine and methionine metabolism 0.0442338073 0.27100271
+#>          NES
+#>        <num>
+#> 1: -1.879954
+#> 2: -1.613489
+#> 3: -1.494579
+#> 4: -1.475140
+#> 5: -1.519228
 
 cat("\n=== TOP 5 CENTRAL METABOLITES ===\n")
 #> 
